@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import Optional
 from collections import defaultdict
 from app.database import get_db
-from app.models import Piedra, Persona, EstadoPiedra
+from app.models import Piedra, Persona, EstadoPiedra, HistorialEstadoPiedra
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -15,75 +16,88 @@ def get_dashboard_stats(
     plan_corte: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    # Fetch all stones with their histories and lot information
-    piedras_query = db.query(Piedra).options(joinedload(Piedra.historial))
-    todas_las_piedras = piedras_query.all()
-    
-    # We will also need tallador names mapping
+    # Get all talladores for mapping names
     talladores = db.query(Persona).filter(Persona.rol == "Tallador").all()
     tallador_map = {t.id: t.nombre for t in talladores}
     
-    filtered_piedras = []
+    # 1. Subquery to find the LATEST history record ID for each stone
+    latest_hist_ids = db.query(func.max(HistorialEstadoPiedra.id)).group_by(HistorialEstadoPiedra.piedra_id)
     
-    for p in todas_las_piedras:
-        # Get the latest history record for the stone
-        latest_hist = p.historial[-1] if p.historial else None
-        
-        # Apply filters
-        if estado and p.estado_actual.value != estado:
-            continue
-        if lote_id and p.lote_id != lote_id:
-            continue
-            
-        stone_tallador_id = latest_hist.tallador_id if latest_hist else None
-        if tallador_id is not None and stone_tallador_id != tallador_id:
-            continue
-            
-        stone_plan = latest_hist.plan_corte if latest_hist else None
-        if plan_corte and stone_plan != plan_corte:
-            continue
-            
-        filtered_piedras.append({
-            "piedra": p,
-            "latest_hist": latest_hist,
-            "tallador_id": stone_tallador_id,
-            "plan_corte": stone_plan
-        })
-        
-    # Aggregate data
-    total_piedras = len(filtered_piedras)
-    total_quilates = sum(
-        item["latest_hist"].peso_ct 
-        for item in filtered_piedras 
-        if item["latest_hist"] and item["latest_hist"].peso_ct is not None
+    # 2. Base query joining Piedra with its latest HistorialEstadoPiedra
+    base_query = db.query(
+        Piedra.id.label("piedra_id"),
+        Piedra.estado_actual.label("estado_actual"),
+        HistorialEstadoPiedra.peso_ct.label("peso_ct"),
+        HistorialEstadoPiedra.tallador_id.label("tallador_id"),
+        HistorialEstadoPiedra.plan_corte.label("plan_corte")
+    ).outerjoin(
+        HistorialEstadoPiedra,
+        (Piedra.id == HistorialEstadoPiedra.piedra_id) & 
+        (HistorialEstadoPiedra.id.in_(latest_hist_ids))
     )
     
-    piedras_por_estado = defaultdict(int)
-    for e in EstadoPiedra:
-        piedras_por_estado[e.value] = 0
+    # 3. Apply Filters
+    if estado:
+        base_query = base_query.filter(Piedra.estado_actual == estado)
+    if lote_id:
+        # We need to join Lote or filter by Piedra.lote_id. It's in Piedra!
+        base_query = base_query.filter(Piedra.lote_id == lote_id)
+    if tallador_id is not None:
+        base_query = base_query.filter(HistorialEstadoPiedra.tallador_id == tallador_id)
+    if plan_corte:
+        base_query = base_query.filter(HistorialEstadoPiedra.plan_corte == plan_corte)
         
-    piedras_por_tallador_counts = defaultdict(int)
-    piedras_por_forma_counts = defaultdict(int)
+    # We turn the base query into a subquery to perform multiple aggregations cleanly
+    filtered_subq = base_query.subquery()
     
-    for item in filtered_piedras:
-        # Estado
-        piedras_por_estado[item["piedra"].estado_actual.value] += 1
-        
-        # Tallador
-        t_id = item["tallador_id"]
+    # --- Aggregation 1: Totals ---
+    total_piedras = db.query(func.count(filtered_subq.c.piedra_id)).scalar() or 0
+    total_quilates = db.query(func.sum(filtered_subq.c.peso_ct)).scalar() or 0.0
+    
+    # --- Aggregation 2: Piedras por Estado ---
+    estado_counts = db.query(
+        filtered_subq.c.estado_actual, 
+        func.count(filtered_subq.c.piedra_id)
+    ).group_by(filtered_subq.c.estado_actual).all()
+    
+    piedras_por_estado = {e.value: 0 for e in EstadoPiedra}
+    for e_enum, count in estado_counts:
+        # e_enum is an enum instance in SQLAlchemy depending on how it's defined
+        e_str = e_enum.value if hasattr(e_enum, 'value') else str(e_enum)
+        # If e_str starts with "EstadoPiedra.", strip it (SQLite enums can be weird)
+        if "." in e_str: e_str = e_str.split(".")[-1]
+        piedras_por_estado[e_str] = count
+
+    # --- Aggregation 3: Piedras por Tallador ---
+    tallador_counts = db.query(
+        filtered_subq.c.tallador_id, 
+        func.count(filtered_subq.c.piedra_id)
+    ).group_by(filtered_subq.c.tallador_id).all()
+    
+    arr_por_tallador = []
+    for t_id, count in tallador_counts:
         t_name = tallador_map.get(t_id, "Sin Asignar") if t_id else "Sin Asignar"
-        piedras_por_tallador_counts[t_name] += 1
+        arr_por_tallador.append({"name": t_name, "value": count})
         
-        # Forma
-        forma = item["plan_corte"] if item["plan_corte"] else "Sin Definir"
-        piedras_por_forma_counts[forma] += 1
-        
-    # Format data for frontend charting (arrays of objects are better for Recharts)
-    arr_por_estado = [{"name": k, "value": v} for k, v in piedras_por_estado.items()]
-    arr_por_tallador = [{"name": k, "value": v} for k, v in piedras_por_tallador_counts.items()]
-    arr_por_forma = [{"name": k, "value": v} for k, v in piedras_por_forma_counts.items()]
+    # Combine duplicate "Sin Asignar" if any (e.g. t_id=None and t_id not in map)
+    tallador_combined = defaultdict(int)
+    for item in arr_por_tallador:
+        tallador_combined[item["name"]] += item["value"]
+    arr_por_tallador = [{"name": k, "value": v} for k, v in tallador_combined.items()]
     
-    # Sort for better visuals
+    # --- Aggregation 4: Piedras por Forma ---
+    forma_counts = db.query(
+        filtered_subq.c.plan_corte, 
+        func.count(filtered_subq.c.piedra_id)
+    ).group_by(filtered_subq.c.plan_corte).all()
+    
+    arr_por_forma = []
+    for forma, count in forma_counts:
+        f_name = forma if forma else "Sin Definir"
+        arr_por_forma.append({"name": f_name, "value": count})
+        
+    # Formatting
+    arr_por_estado = [{"name": k, "value": v} for k, v in piedras_por_estado.items()]
     arr_por_tallador.sort(key=lambda x: x["value"], reverse=True)
     arr_por_forma.sort(key=lambda x: x["value"], reverse=True)
     
