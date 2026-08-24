@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useStoneStore } from '../store/useStoneStore';
 import DynamicActorSelect from './DynamicActorSelect';
 import { Camera } from 'lucide-react';
 
 const ESTADOS = ['Ingreso', 'Desbaste', 'Tallado', 'Entregado'];
 
-export default function StoneViewer({ piedraId, onBack }) {
+export default function StoneViewer() {
+  const { id: piedraId } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Ingreso');
   const [formData, setFormData] = useState({});
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -155,7 +158,7 @@ export default function StoneViewer({ piedraId, onBack }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-primary flex items-center gap-3">
-          <button onClick={onBack} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition">Volver</button>
+          <button onClick={() => navigate(-1)} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition cursor-pointer">Volver</button>
           {errorMsg ? 'Error de Búsqueda' : (
             <>Trazabilidad Piedra: <span className="text-blue-400">{piedraId}</span></>
           )}

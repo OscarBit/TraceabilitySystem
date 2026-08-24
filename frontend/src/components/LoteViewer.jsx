@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
-export default function LoteViewer({ loteId, onBack, onStoneClick }) {
+export default function LoteViewer() {
+  const { id: loteId } = useParams();
+  const navigate = useNavigate();
   const [lote, setLote] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +44,7 @@ export default function LoteViewer({ loteId, onBack, onStoneClick }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-primary flex items-center gap-3">
-          <button onClick={onBack} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition">Volver</button>
+          <button onClick={() => navigate(-1)} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition cursor-pointer">Volver</button>
           {errorMsg ? 'Error de Búsqueda' : (
             <>Detalle del Lote: <span className="text-blue-400">{loteId}</span></>
           )}
@@ -92,8 +95,8 @@ export default function LoteViewer({ loteId, onBack, onStoneClick }) {
                   <tr key={piedra.id} className="hover:bg-gray-800/30 transition-colors">
                     <td className="p-4">
                       <button 
-                        onClick={() => onStoneClick(piedra.id)}
-                        className="text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                        onClick={() => navigate(`/trazabilidad/${piedra.id}`)}
+                        className="text-blue-400 hover:text-blue-300 hover:underline font-mono cursor-pointer"
                       >
                         {piedra.id}
                       </button>

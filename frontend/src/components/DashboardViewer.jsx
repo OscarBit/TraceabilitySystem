@@ -3,10 +3,12 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, 
   PieChart, Pie, Cell, ResponsiveContainer 
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
-export default function DashboardViewer({ onBack }) {
+export default function DashboardViewer() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -46,7 +48,7 @@ export default function DashboardViewer({ onBack }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-primary flex items-center gap-3">
-          <button onClick={onBack} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition">Volver</button>
+          <button onClick={() => navigate(-1)} className="text-sm px-3 py-1 bg-border rounded hover:bg-gray-700 transition cursor-pointer">Volver</button>
           Dashboard de Operaciones
         </h2>
       </div>
