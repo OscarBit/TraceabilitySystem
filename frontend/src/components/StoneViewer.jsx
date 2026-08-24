@@ -274,7 +274,7 @@ export default function StoneViewer() {
           <label className="text-sm font-semibold text-gray-300 mb-2 block">Fotografía del Estado</label>
           <div className="flex items-center gap-4">
             {formData.foto_url && (
-              <img src={formData.foto_url} alt="Piedra" className="w-32 h-32 object-cover rounded-lg border border-border bg-black" />
+              <img src={formData.foto_url.startsWith('http') ? formData.foto_url : `${import.meta.env.VITE_API_URL}${formData.foto_url}`} alt="Piedra" className="w-32 h-32 object-cover rounded-lg border border-border bg-black" />
             )}
             
             {(!isReadOnly && activeTab !== 'Entregado') && (

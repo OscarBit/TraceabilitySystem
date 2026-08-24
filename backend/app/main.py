@@ -31,6 +31,8 @@ from fastapi import UploadFile, File
 import uuid
 import shutil
 import os
+from PIL import Image
+import io
 
 # Mount uploads directory
 os.makedirs("uploads", exist_ok=True)
@@ -46,14 +48,29 @@ async def upload_image(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    file_extension = file.filename.split(".")[-1]
-    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    unique_filename = f"{uuid.uuid4()}.webp"
     file_path = f"uploads/{unique_filename}"
     
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    contents = await file.read()
+    
+    try:
+        img = Image.open(io.BytesIO(contents))
         
-    return {"url": f"http://localhost:8000/uploads/{unique_filename}"}
+        if img.width > 1024:
+            ratio = 1024.0 / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((1024, new_height), Image.Resampling.LANCZOS)
+            
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+            
+        img.save(file_path, "WEBP", quality=80)
+    except Exception as e:
+        print(f"Image processing error: {e}")
+        raise HTTPException(status_code=500, detail="Error processing image")
+        
+    # Devuelve la URL relativa
+    return {"url": f"/uploads/{unique_filename}"}
 
 @app.get("/")
 def read_root():
