@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-const PLANES_DE_CORTE = [
-  "Corte Esmeralda", "Ovalo", "Cojín", "Pera", "Redondo", 
-  "Asscher", "Octágono", "Corazón", "Cabujón", "Trillion", "Fantasía"
-];
-
 export default function LoteViewer({ loteId, onBack, onStoneClick }) {
   const [lote, setLote] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [updatingStoneId, setUpdatingStoneId] = useState(null);
 
   useEffect(() => {
     fetchLote();
@@ -34,38 +28,6 @@ export default function LoteViewer({ loteId, onBack, onStoneClick }) {
       setErrorMsg("Error de conexión con el servidor");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePlanCorteChange = async (piedraId, newPlan) => {
-    setUpdatingStoneId(piedraId);
-    try {
-      const res = await fetch(`http://localhost:8000/piedras/${piedraId}/plan_corte`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Device-Code': 'dev_device_12345'
-        },
-        body: JSON.stringify({ plan_corte: newPlan })
-      });
-      
-      if (res.ok) {
-        // Update local state
-        setLote(prev => ({
-          ...prev,
-          piedras: prev.piedras.map(p => 
-            p.id === piedraId ? { ...p, plan_corte: newPlan } : p
-          )
-        }));
-      } else {
-        const err = await res.json();
-        alert(`Error al actualizar: ${err.detail}`);
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Error de conexión al actualizar plan de corte");
-    } finally {
-      setUpdatingStoneId(null);
     }
   };
 
@@ -148,18 +110,12 @@ export default function LoteViewer({ loteId, onBack, onStoneClick }) {
                     </td>
                     <td className="p-4 text-gray-300">{piedra.peso_ct !== null ? piedra.peso_ct : '-'}</td>
                     <td className="p-4 text-gray-300">{piedra.tallador_id !== null ? piedra.tallador_id : '-'}</td>
-                    <td className="p-4">
-                      <select
-                        value={piedra.plan_corte || ""}
-                        onChange={(e) => handlePlanCorteChange(piedra.id, e.target.value)}
-                        disabled={updatingStoneId === piedra.id || piedra.estado_actual === 'Entregado'}
-                        className="w-full bg-input border border-border text-foreground p-2 rounded outline-none focus:border-blue-500 disabled:opacity-50"
-                      >
-                        <option value="" disabled>Seleccione...</option>
-                        {PLANES_DE_CORTE.map(plan => (
-                          <option key={plan} value={plan}>{plan}</option>
-                        ))}
-                      </select>
+                    <td className="p-4 text-gray-300">
+                      {piedra.plan_corte ? (
+                        <span className="px-3 py-1 bg-gray-800 rounded-md border border-gray-700 text-sm">
+                          {piedra.plan_corte}
+                        </span>
+                      ) : '-'}
                     </td>
                   </tr>
                 ))}

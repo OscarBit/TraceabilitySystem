@@ -25,7 +25,7 @@ async def verify_device_code(x_device_code: str = Header(None)):
             detail="Dispositivo no autorizado. Falta o es incorrecto el header X-Device-Code."
         )
 
-from app.routers import personas, lotes, piedras
+from app.routers import personas, lotes, piedras, dashboard
 from fastapi.staticfiles import StaticFiles
 from fastapi import UploadFile, File
 import uuid
@@ -39,6 +39,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(personas.router, dependencies=[Depends(verify_device_code)])
 app.include_router(lotes.router, dependencies=[Depends(verify_device_code)])
 app.include_router(piedras.router, dependencies=[Depends(verify_device_code)])
+app.include_router(dashboard.router, dependencies=[Depends(verify_device_code)])
 
 @app.post("/upload/image", dependencies=[Depends(verify_device_code)])
 async def upload_image(file: UploadFile = File(...)):

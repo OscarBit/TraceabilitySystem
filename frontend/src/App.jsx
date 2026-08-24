@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import DynamicActorSelect from './components/DynamicActorSelect';
 import StoneViewer from './components/StoneViewer';
 import LoteViewer from './components/LoteViewer';
+import DashboardViewer from './components/DashboardViewer';
 
 function App() {
   const [view, setView] = useState('home'); // home, recepcion, trazabilidad, lote
@@ -96,7 +97,7 @@ function App() {
              <p className="text-gray-400 leading-relaxed">Registrar un nuevo lote de piedras, asignar cliente, responsable y generar códigos QR.</p>
           </div>
           
-          <div className="p-8 rounded-2xl bg-card border border-border shadow-2xl hover:border-emerald-500/50 transition-all duration-300 group">
+           <div className="p-8 rounded-2xl bg-card border border-border shadow-2xl hover:border-emerald-500/50 transition-all duration-300 group">
              <h2 className="text-2xl font-bold mb-4 text-primary group-hover:text-emerald-400 transition-colors">Visor de Trazabilidad</h2>
              <p className="text-gray-400 leading-relaxed mb-4">Ingresa el ID de la piedra (ej. GSX-2026-001-001) escaneado desde el QR.</p>
               <div className="flex flex-col gap-4">
@@ -133,6 +134,14 @@ function App() {
                     </button>
                  </div>
               </div>
+          </div>
+
+          <div 
+            onClick={() => setView('dashboard')}
+            className="md:col-span-2 p-8 rounded-2xl bg-card border border-border shadow-2xl hover:border-purple-500/50 transition-all duration-300 group cursor-pointer flex flex-col items-center text-center"
+          >
+             <h2 className="text-2xl font-bold mb-2 text-primary group-hover:text-purple-400 transition-colors">Dashboard de Operaciones</h2>
+             <p className="text-gray-400 leading-relaxed">Ver estadísticas, métricas, y supervisar el volumen general de procesamiento de la planta.</p>
           </div>
         </div>
       )}
@@ -245,6 +254,13 @@ function App() {
               setView('trazabilidad');
             }}
           />
+        </div>
+      )}
+
+      {/* Dashboard View */}
+      {view === 'dashboard' && (
+        <div className="print:hidden w-full">
+          <DashboardViewer onBack={() => setView('home')} />
         </div>
       )}
 

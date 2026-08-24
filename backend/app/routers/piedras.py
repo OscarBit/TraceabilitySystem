@@ -30,6 +30,33 @@ def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depend
                 data.profundo_mm != last_hist.profundo_mm):
                 raise HTTPException(status_code=403, detail="Las medidas físicas no pueden cambiar en estado Entregado")
 
+    if data.peso_ct is not None:
+        # Business rule: Weight in subsequent states cannot be greater than Ingreso weight
+        if data.estado != EstadoPiedra.Ingreso:
+            ingreso_hist = db.query(HistorialEstadoPiedra).filter(
+                HistorialEstadoPiedra.piedra_id == id,
+                HistorialEstadoPiedra.estado_registrado == EstadoPiedra.Ingreso
+            ).first()
+            if ingreso_hist and ingreso_hist.peso_ct is not None:
+                if data.peso_ct > ingreso_hist.peso_ct:
+                    raise HTTPException(status_code=400, detail=f"El peso no puede ser mayor al de Ingreso ({ingreso_hist.peso_ct} ct)")
+
+        # Business rule: The total sum of stones' weights cannot exceed the Lot's total weight
+        from app.models import Lote
+        lote = db.query(Lote).filter(Lote.id == piedra.lote_id).first()
+        if lote:
+            suma_otros = 0
+            for otra_piedra in lote.piedras:
+                if otra_piedra.id != id:
+                    latest_hist = db.query(HistorialEstadoPiedra).filter(
+                        HistorialEstadoPiedra.piedra_id == otra_piedra.id
+                    ).order_by(HistorialEstadoPiedra.fecha_actualizacion.desc()).first()
+                    if latest_hist and latest_hist.peso_ct is not None:
+                        suma_otros += latest_hist.peso_ct
+            
+            if (suma_otros + data.peso_ct) > lote.peso_total_ct:
+                raise HTTPException(status_code=400, detail=f"La suma de los pesos ({suma_otros + data.peso_ct} ct) excede el peso total del lote ({lote.peso_total_ct} ct)")
+
     # Business rule: "Desbaste" inherits "plan_corte" if not provided
     plan_corte = data.plan_corte
     if data.estado == EstadoPiedra.Desbaste and not plan_corte:
