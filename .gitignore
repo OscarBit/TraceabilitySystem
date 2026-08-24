@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Database & Storage
+gemstone.db
+uploads/
+
+# OS generated files
+.DS_Store
+Thumbs.db
