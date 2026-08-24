@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, CheckCircle2, XCircle, X } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000';
-
 export default function DynamicActorSelect({ label, role, onSelect, value, onIsCreatingChange }) {
   const [actors, setActors] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -22,7 +20,7 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
 
   const fetchActors = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/personas`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/personas`, {
         headers: { 'X-Device-Code': 'dev_device_12345' }
       });
       if (res.ok) {
@@ -48,7 +46,7 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
     if (!newActorName.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/personas/`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/personas/rol/${role}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

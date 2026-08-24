@@ -13,7 +13,7 @@ export default function LoteViewer({ loteId, onBack, onStoneClick }) {
     setIsLoading(true);
     try {
       setErrorMsg(null);
-      const res = await fetch(`http://localhost:8000/lotes/${loteId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/lotes/${loteId}`, {
         headers: { 'X-Device-Code': 'dev_device_12345' }
       });
       if (res.ok) {

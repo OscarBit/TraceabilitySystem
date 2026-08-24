@@ -27,7 +27,7 @@ export default function DashboardViewer({ onBack }) {
       if (loteId) params.append('lote_id', loteId);
       if (planCorte) params.append('plan_corte', planCorte);
       
-      const res = await fetch(`http://localhost:8000/dashboard/stats?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/stats?${params.toString()}`, {
         headers: { 'X-Device-Code': 'dev_device_12345' }
       });
       if (res.ok) {

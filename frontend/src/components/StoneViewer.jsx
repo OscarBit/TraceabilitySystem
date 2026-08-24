@@ -21,7 +21,7 @@ export default function StoneViewer({ piedraId, onBack }) {
   const fetchHistory = async () => {
     try {
       setErrorMsg(null);
-      const res = await fetch(`http://localhost:8000/piedras/${piedraId}/historial`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/historial`, {
         headers: { 'X-Device-Code': 'dev_device_12345' }
       });
       if (res.ok) {
@@ -83,7 +83,7 @@ export default function StoneViewer({ piedraId, onBack }) {
     formPayload.append('file', file);
 
     try {
-      const res = await fetch(`http://localhost:8000/upload/image`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/upload/image`, {
         method: 'POST',
         headers: { 'X-Device-Code': 'dev_device_12345' },
         body: formPayload
@@ -123,7 +123,7 @@ export default function StoneViewer({ piedraId, onBack }) {
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/piedras/${piedraId}/estado`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/estado`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

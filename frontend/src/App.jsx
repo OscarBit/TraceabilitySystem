@@ -35,7 +35,7 @@ function App() {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8000/lotes/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/lotes/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
