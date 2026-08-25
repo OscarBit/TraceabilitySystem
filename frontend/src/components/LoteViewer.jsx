@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { fetchAuth } from '../utils/api';
 
 export default function LoteViewer() {
   const { id: loteId } = useParams();
@@ -16,9 +17,7 @@ export default function LoteViewer() {
     setIsLoading(true);
     try {
       setErrorMsg(null);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/lotes/${loteId}`, {
-        headers: { 'X-Device-Code': 'dev_device_12345' }
-      });
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/${loteId}`);
       if (res.ok) {
         const data = await res.json();
         setLote(data);

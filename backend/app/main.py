@@ -25,7 +25,8 @@ async def verify_device_code(x_device_code: str = Header(None)):
             detail="Dispositivo no autorizado. Falta o es incorrecto el header X-Device-Code."
         )
 
-from app.routers import personas, lotes, piedras, dashboard
+from app.routers import personas, lotes, piedras, dashboard, auth
+from app.auth import get_current_user
 from fastapi.staticfiles import StaticFiles
 from fastapi import UploadFile, File
 import uuid
@@ -38,12 +39,13 @@ import io
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-app.include_router(personas.router, dependencies=[Depends(verify_device_code)])
-app.include_router(lotes.router, dependencies=[Depends(verify_device_code)])
-app.include_router(piedras.router, dependencies=[Depends(verify_device_code)])
-app.include_router(dashboard.router, dependencies=[Depends(verify_device_code)])
+app.include_router(auth.router)
+app.include_router(personas.router, dependencies=[Depends(get_current_user)])
+app.include_router(lotes.router, dependencies=[Depends(get_current_user)])
+app.include_router(piedras.router, dependencies=[Depends(get_current_user)])
+app.include_router(dashboard.router, dependencies=[Depends(get_current_user)])
 
-@app.post("/upload/image", dependencies=[Depends(verify_device_code)])
+@app.post("/upload/image", dependencies=[Depends(get_current_user)])
 async def upload_image(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")

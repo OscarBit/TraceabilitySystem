@@ -21,6 +21,8 @@ class Persona(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
     rol = Column(Enum(RolPersona), nullable=False)
+    username = Column(String(50), unique=True, index=True, nullable=True)
+    password_hash = Column(String(255), nullable=True)
 
 class Ubicacion(Base):
     __tablename__ = "ubicaciones"

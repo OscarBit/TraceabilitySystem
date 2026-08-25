@@ -5,6 +5,8 @@ import DynamicActorSelect from './components/DynamicActorSelect';
 import StoneViewer from './components/StoneViewer';
 import LoteViewer from './components/LoteViewer';
 import DashboardViewer from './components/DashboardViewer';
+import Login from './components/Login';
+import { fetchAuth } from './utils/api';
 
 // Home Component
 function Home() {
@@ -100,12 +102,8 @@ function Recepcion() {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/lotes/`, {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Device-Code': 'dev_device_12345'
-        },
         body: JSON.stringify({
           cliente_id: parseInt(clienteId),
           responsable_id: parseInt(responsableId),
@@ -238,6 +236,7 @@ function App() {
       </div>
       
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Home />} />
         <Route path="/recepcion" element={<Recepcion />} />
         <Route path="/trazabilidad/:id" element={<div className="w-full max-w-4xl"><StoneViewer /></div>} />

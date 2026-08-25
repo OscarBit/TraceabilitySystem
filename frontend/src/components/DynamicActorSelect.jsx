@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchAuth } from '../utils/api';
 import { PlusCircle, CheckCircle2, XCircle, X } from 'lucide-react';
 
 export default function DynamicActorSelect({ label, role, onSelect, value, onIsCreatingChange }) {
@@ -18,20 +19,20 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
     }
   }, [isCreating, onIsCreatingChange]);
 
-  const fetchActors = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/personas`, {
-        headers: { 'X-Device-Code': 'dev_device_12345' }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const filtered = data.filter(a => a.rol === role);
-        setActors(filtered);
+  useEffect(() => {
+    const fetchActors = async () => {
+      try {
+        const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas/rol/${role}`);
+        if (res.ok) {
+          const data = await res.json();
+          setActors(data);
+        }
+      } catch (error) {
+        console.error("Error fetching actors", error);
       }
-    } catch (error) {
-      console.error("Error fetching actors", error);
-    }
-  };
+    };
+    fetchActors();
+  }, [role]);
 
   const handleSelectChange = (e) => {
     const selectedVal = e.target.value;
@@ -46,12 +47,8 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
     if (!newActorName.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/personas/rol/${role}`, {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Device-Code': 'dev_device_12345'
-        },
         body: JSON.stringify({ nombre: newActorName.trim(), rol: role })
       });
       if (res.ok) {

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, 
   PieChart, Pie, Cell, ResponsiveContainer 
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { fetchAuth } from '../utils/api';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -29,9 +29,7 @@ export default function DashboardViewer() {
       if (loteId) params.append('lote_id', loteId);
       if (planCorte) params.append('plan_corte', planCorte);
       
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/stats?${params.toString()}`, {
-        headers: { 'X-Device-Code': 'dev_device_12345' }
-      });
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/dashboard/stats?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data);

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStoneStore } from '../store/useStoneStore';
 import DynamicActorSelect from './DynamicActorSelect';
 import { Camera } from 'lucide-react';
+import { fetchAuth } from '../utils/api';
 
 const ESTADOS = ['Ingreso', 'Desbaste', 'Tallado', 'Entregado'];
 
@@ -24,9 +25,7 @@ export default function StoneViewer() {
   const fetchHistory = async () => {
     try {
       setErrorMsg(null);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/historial`, {
-        headers: { 'X-Device-Code': 'dev_device_12345' }
-      });
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/historial`);
       if (res.ok) {
         const data = await res.json();
         setEstadosHistorial(data);
@@ -86,9 +85,8 @@ export default function StoneViewer() {
     formPayload.append('file', file);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/upload/image`, {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/upload/image`, {
         method: 'POST',
-        headers: { 'X-Device-Code': 'dev_device_12345' },
         body: formPayload
       });
       if (res.ok) {
@@ -126,12 +124,8 @@ export default function StoneViewer() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/estado`, {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/estado`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Device-Code': 'dev_device_12345'
-        },
         body: JSON.stringify({
           estado: activeTab,
           ...formData
