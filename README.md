@@ -4,45 +4,44 @@ GemStoneX es una aplicación web moderna diseñada para la gestión y trazabilid
 
 ## 🚀 Características Principales
 
-- **Gestión de Lotes:** Registro de nuevos lotes asignados a clientes y operadores responsables, especificando peso total estimado y cantidad de piedras.
-- **Generación Automática de Códigos QR:** Creación de identificadores únicos y códigos QR verificables criptográficamente para lotes y piedras individuales.
-- **Trazabilidad Individual:** Seguimiento detallado del historial de cada piedra en 4 estados principales:
-  - *Ingreso*
-  - *Desbaste*
-  - *Tallado*
-  - *Entregado*
-- **Registro Físico:** Almacenamiento del peso (ct), dimensiones (mm), plan de corte, evidencias fotográficas y notas en cada etapa.
-- **Gestión de Actores:** Administración dinámica de Clientes, Operadores y Talladores integrados directamente en el flujo de trabajo.
+- **Gestión de Lotes:** Registro de nuevos lotes asignados a clientes y operadores responsables, especificando peso total estimado y cantidad de piedras. Las reglas de negocio aseguran que el peso de las piedras individuales nunca sobrepase el límite del lote total.
+- **Trazabilidad Individual Inmutable:** Seguimiento detallado del historial de cada piedra (Ingreso, Desbaste, Tallado, Entregado). El peso de la piedra no puede aumentar artificialmente entre etapas.
+- **Deep Linking y Navegación Dinámica:** Utilización de React Router para compartir e incrustar enlaces directos a piedras (`/trazabilidad/:id`) y lotes (`/lotes/:id`).
+- **Autenticación Segura (JWT):** Acceso restringido por roles mediante tokens JWT (JSON Web Tokens) con cifrado `bcrypt` para proteger la inyección de estados.
+- **Generación Automática de Códigos QR:** Creación de identificadores únicos verificables criptográficamente.
+- **Optimización de Evidencias:** Compresión y conversión al vuelo de imágenes al formato **WebP** usando Pillow, optimizando almacenamiento y tiempos de carga.
+- **Dashboard Estadístico:** Analíticas en tiempo real que permiten supervisar la operación agrupada mediante consultas SQL agregadas para máximo rendimiento.
 
 ## 🛠️ Stack Tecnológico
 
-- **Frontend:** React 19, Vite, Tailwind CSS (v4), Zustand (Gestión de estado ligero).
-- **Backend:** Python 3, FastAPI, SQLAlchemy (ORM).
-- **Base de Datos:** SQLite (`gemstone.db`) integrado localmente para desarrollo rápido (preparado para migrar a bases relacionales mayores en producción).
-- **Seguridad:** Firmas HMAC-SHA256 para validación de autenticidad en los códigos generados.
+- **Frontend:** React 19, Vite, Tailwind CSS (v4), Zustand, React Router DOM.
+- **Backend:** Python 3, FastAPI, SQLAlchemy, Pillow, Passlib/Bcrypt, python-jose (JWT).
+- **Base de Datos:** SQLite (`gemstone.db`) integrado (100% migratorio a PostgreSQL/MySQL).
+- **Pruebas:** Pytest y TestClient para cobertura unitaria.
 
 ## 📂 Estructura del Proyecto
 
-El repositorio está dividido en dos aplicaciones principales independientes:
+El repositorio está dividido en dos aplicaciones:
 
 ```text
 App/
 ├── backend/               # API y Lógica de Negocio
 │   ├── app/               # Código fuente FastAPI
-│   │   ├── routers/       # Endpoints de la API (lotes, piedras, personas)
+│   │   ├── routers/       # Endpoints (auth, dashboard, lotes, piedras, personas)
 │   │   ├── schemas/       # Modelos Pydantic para validación y tipado
 │   │   ├── models.py      # Modelos ORM SQLAlchemy
 │   │   └── main.py        # Punto de entrada y configuraciones de FastAPI
-│   ├── uploads/           # Almacenamiento local de evidencias fotográficas
-│   ├── gemstone.db        # Base de datos local SQLite
+│   ├── tests/             # Pruebas unitarias de las reglas de negocio (pytest)
+│   ├── uploads/           # Almacenamiento optimizado de imágenes (WebP)
 │   └── requirements.txt   # Dependencias de Python
 └── frontend/              # Interfaz de Usuario
-    ├── src/               # Código fuente React
-    │   ├── components/    # Componentes de UI (LoteViewer, StoneViewer, Selects dinámicos)
-    │   ├── store/         # Hooks de estado global (Zustand)
-    │   └── App.jsx        # Vistas principales y enrutador
-    ├── public/            # Assets estáticos, logos, etc.
-    └── package.json       # Dependencias de Node.js
+    ├── src/               
+    │   ├── components/    # Componentes de UI (Login, DashboardViewer, LoteViewer, etc)
+    │   ├── store/         # Hooks globales
+    │   ├── utils/         # Validadores, fetchAuth (Interceptor JWT)
+    │   └── App.jsx        # Enrutador principal
+    ├── .env               # Variables de configuración del cliente (URL de API)
+    └── package.json       
 ```
 
 ## ⚙️ Instalación y Ejecución Local
@@ -55,7 +54,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu máquina local.
    ```bash
    cd backend
    ```
-2. Crea un entorno virtual (recomendado) e instala las dependencias:
+2. Crea un entorno virtual e instala las dependencias:
    ```bash
    python -m venv venv
    
@@ -70,7 +69,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu máquina local.
    ```bash
    uvicorn app.main:app --reload
    ```
-   *El servidor estará disponible en `http://localhost:8000`. Puedes consultar la documentación interactiva de la API en `http://localhost:8000/docs`.*
+   *El servidor de API estará disponible en `http://localhost:8000`.*
 
 ### 2. Frontend (React + Vite)
 
@@ -82,25 +81,34 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu máquina local.
    ```bash
    npm install
    ```
-3. Inicia el servidor de desarrollo:
+3. Crea un archivo `.env` en la raíz de `frontend` (opcional, por defecto es local):
+   ```env
+   VITE_API_URL=http://localhost:8000
+   ```
+4. Inicia el servidor de desarrollo:
    ```bash
    npm run dev
    ```
-   *La aplicación web estará disponible en `http://localhost:5173`.*
+   *La aplicación web estará disponible en `http://localhost:5173`. Las credenciales por defecto son admin/admin123 (o créalas vía API).*
+
+## 🧪 Pruebas Automatizadas
+
+El backend incluye pruebas unitarias para proteger la integridad matemática de las transacciones (ej. que una piedra tallada no pese más que su estado original).
+Para ejecutarlas, ingresa al backend con el entorno virtual activado y ejecuta:
+
+```bash
+pytest tests/
+```
 
 ## 🔗 Endpoints Principales (API)
 
-A continuación, un resumen de la estructura de la API REST que consume la aplicación:
-
-- **Personas**:
-  - `POST /personas/` - Crea un nuevo actor (Cliente, Operador o Tallador).
-  - `GET /personas/rol/{rol}` - Lista personas según el rol requerido.
-- **Lotes**:
-  - `POST /lotes/` - Registra un lote nuevo, genera las identificaciones de las piedras hijas y sus firmas QR criptográficas.
-  - `GET /lotes/{id}` - Recupera la información global de un lote específico junto con la lista y estado de todas sus piedras.
-- **Piedras**:
-  - `POST /piedras/{id}/estado` - Inyecta un nuevo registro de estado (con medidas y fotografías) en el historial inmutable de la piedra.
-  - `GET /piedras/{id}/historial` - Devuelve el historial completo de la piedra, ordenado cronológicamente, útil para la representación en la línea de tiempo.
-  - `PATCH /piedras/{id}/plan_corte` - Actualiza rápidamente la forma de talla asignada a una piedra directamente desde la vista del lote.
-- **Imágenes**:
-  - `POST /upload/image` - Endpoint de subida multipart para alojar la fotografía física de la piedra en el almacenamiento del servidor.
+- **Auth**:
+  - `POST /auth/token` - Intercambia usuario y contraseña por un token JWT Bearer.
+- **Dashboard**:
+  - `GET /dashboard/stats` - Retorna los agregados estadísticos nativos (piedras por estado, tallador, y pesos totales).
+- **Lotes y Piedras**:
+  - `POST /lotes/` - Registra un lote nuevo, autogenerando piedras.
+  - `POST /piedras/{id}/estado` - Inyecta un nuevo registro de estado e imágenes en el historial. Valida reglas de peso límite.
+  - `GET /piedras/{id}/historial` - Devuelve el historial inmutable cronológico.
+- **Uploads**:
+  - `POST /upload/image` - Procesa con Pillow la fotografía a WebP y la almacena.
