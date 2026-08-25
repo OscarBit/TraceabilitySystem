@@ -40,9 +40,9 @@ async def login_for_access_token(
         db.commit()
         
         print("\n" + "="*50)
-        print(f"🔒 SIMULACIÓN DE CORREO (2FA) 🔒")
+        print(f"*** SIMULACION DE CORREO (2FA) ***")
         print(f"Para: {user.username}")
-        print(f"Código de Verificación: {code}")
+        print(f"Codigo de Verificacion: {code}")
         print("="*50 + "\n")
         
         raise HTTPException(
