@@ -6,6 +6,8 @@ import StoneViewer from './components/StoneViewer';
 import LoteViewer from './components/LoteViewer';
 import DashboardViewer from './components/DashboardViewer';
 import Login from './components/Login';
+import Register from './components/Register';
+import Navbar from './components/Navbar';
 import { fetchAuth } from './utils/api';
 
 // Home Component
@@ -220,7 +222,8 @@ function App() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-start pt-16 p-4">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-start pt-24 p-4">
+      <Navbar />
       {/* Header */}
       <div className="text-center mb-12 print:hidden flex flex-col items-center">
         <img 
@@ -237,6 +240,7 @@ function App() {
       
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/" element={<Home />} />
         <Route path="/recepcion" element={<Recepcion />} />
         <Route path="/trazabilidad/:id" element={<div className="w-full max-w-4xl"><StoneViewer /></div>} />

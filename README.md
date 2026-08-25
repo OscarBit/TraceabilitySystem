@@ -112,3 +112,19 @@ pytest tests/
   - `GET /piedras/{id}/historial` - Devuelve el historial inmutable cronológico.
 - **Uploads**:
   - `POST /upload/image` - Procesa con Pillow la fotografía a WebP y la almacena.
+
+## 🐳 Despliegue con Docker (Producción)
+
+El proyecto está completamente contenerizado para un despliegue rápido y seguro en cualquier VPS (DigitalOcean, AWS, etc.).
+
+1. Asegúrate de tener Docker y Docker Compose instalados.
+2. En la raíz del proyecto, ejecuta:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. El frontend estará disponible en el puerto 80 y el backend en el puerto 8000. La base de datos y las imágenes subidas están protegidas por volúmenes persistentes.
+
+## 🔒 Seguridad Avanzada
+
+- **Doble Factor (2FA)**: Al iniciar sesión en el frontend, el backend exigirá un código de seguridad de 6 dígitos. Dado que este entorno no requiere un servidor SMTP por ahora, el código 2FA se imprime de manera simulada en la consola/terminal del proceso backend.
+- **Roles y Privilegios (RBAC)**: Solo los usuarios con rol `Administrador` tienen permitido visualizar el Dashboard de métricas generales y registrar a otros miembros del equipo (`/register`). Las cuentas de los talladores (`Operador`) tienen un acceso enfocado únicamente en la trazabilidad.

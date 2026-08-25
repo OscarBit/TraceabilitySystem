@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
 from collections import defaultdict
 from app.database import get_db
 from app.models import Piedra, Persona, EstadoPiedra, HistorialEstadoPiedra
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -14,8 +15,11 @@ def get_dashboard_stats(
     lote_id: Optional[str] = None,
     tallador_id: Optional[int] = None,
     plan_corte: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Persona = Depends(get_current_user)
 ):
+    if current_user.rol.value != "Administrador":
+        raise HTTPException(status_code=403, detail="Acceso denegado. Se requiere rol de Administrador.")
     # Get all talladores for mapping names
     talladores = db.query(Persona).filter(Persona.rol == "Tallador").all()
     tallador_map = {t.id: t.nombre for t in talladores}

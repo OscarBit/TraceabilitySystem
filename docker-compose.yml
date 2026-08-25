@@ -1,19 +1,30 @@
 version: '3.8'
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: gemstone_db
-    restart: always
-    environment:
-      MYSQL_DATABASE: gemstone
-      MYSQL_USER: gem_user
-      MYSQL_PASSWORD: gem_password
-      MYSQL_ROOT_PASSWORD: root_password
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gemstone-backend
     ports:
-      - "3306:3306"
+      - "8000:8000"
     volumes:
-      - db_data:/var/lib/mysql
+      - gemstone-data:/app
+    environment:
+      - DATABASE_URL=sqlite:///./gemstone.db
+    restart: always
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gemstone-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
 
 volumes:
-  db_data:
+  gemstone-data:
+    description: Persistent volume for SQLite and uploads

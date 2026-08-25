@@ -25,6 +25,17 @@ export const fetchAuth = async (url, options = {}) => {
   if (response.status === 401) {
     localStorage.removeItem('token');
     window.location.href = '/login';
+  } else if (response.status === 403) {
+    // Handling RBAC / 2FA errors
+    const errorData = await response.clone().json().catch(() => ({}));
+    if (errorData.detail === "2FA_REQUIRED") {
+      throw new Error("2FA_REQUIRED");
+    } else {
+      alert(errorData.detail || "Acceso denegado. No tienes permisos suficientes.");
+      if (window.location.pathname.includes('/dashboard')) {
+        window.location.href = '/';
+      }
+    }
   }
   
   return response;

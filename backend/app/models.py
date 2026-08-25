@@ -8,6 +8,7 @@ class RolPersona(enum.Enum):
     Cliente = "Cliente"
     Operador = "Operador"
     Tallador = "Tallador"
+    Administrador = "Administrador"
 
 class EstadoPiedra(enum.Enum):
     Ingreso = "Ingreso"
@@ -23,6 +24,7 @@ class Persona(Base):
     rol = Column(Enum(RolPersona), nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=True)
     password_hash = Column(String(255), nullable=True)
+    two_factor_code = Column(String(10), nullable=True)
 
 class Ubicacion(Base):
     __tablename__ = "ubicaciones"
