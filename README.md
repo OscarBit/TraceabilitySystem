@@ -1,6 +1,6 @@
-# GemStoneX - Sistema de Trazabilidad de Inventario
+# GemstoneX Trace - Sistema de Trazabilidad de Inventario
 
-GemStoneX es una aplicación web moderna diseñada para la gestión y trazabilidad integral del inventario de piedras preciosas. Permite realizar un seguimiento exhaustivo de cada piedra desde su recepción como parte de un lote, pasando por diversas fases de procesamiento (desbaste, tallado), hasta su entrega final, asegurando en todo momento la integridad y seguridad de la información.
+GemstoneX Trace es una aplicación web moderna diseñada para la gestión y trazabilidad integral del inventario de piedras preciosas. Permite realizar un seguimiento exhaustivo de cada piedra desde su recepción como parte de un lote, pasando por diversas fases de procesamiento (desbaste, tallado), hasta su entrega final, asegurando en todo momento la integridad y seguridad de la información.
 
 ## 🚀 Características Principales
 
@@ -123,11 +123,26 @@ El proyecto está completamente contenerizado para un despliegue rápido y segur
 3. **PaaS (Render/Railway):** Despliegue automatizado conectado a GitHub. *(Nota: Requiere configurar volúmenes persistentes adicionales para evitar la pérdida de la base de datos SQLite en reinicios efímeros).*
 
 ### Instrucciones de Arranque
-Asegúrate de tener Docker y Docker Compose instalados. En la raíz del proyecto, ejecuta:
+
+Asegúrate de tener Docker y Docker Compose instalados. En la raíz del proyecto:
+
+1. Copia `.env.example` a `.env` y completa los valores:
+
 ```bash
-docker-compose up --build -d
+cp .env.example .env
+openssl rand -hex 32   # para JWT_SECRET_KEY
+openssl rand -hex 32   # para SECRET_KEY
 ```
-El frontend estará disponible en el puerto 80 y el backend en el puerto 8000. La base de datos y las imágenes subidas están protegidas por volúmenes persistentes.
+
+2. Levanta los servicios:
+
+```bash
+docker compose up --build -d
+```
+
+Caddy obtiene el certificado TLS automáticamente para el `DOMAIN` configurado y sirve el SPA; nginx enruta `/api` al backend, de modo que todo comparte un solo origen. La base de datos y las imágenes viven en el volumen `trace-data` (`/app/data`), así que sobreviven a las reconstrucciones.
+
+**Importante:** `SECRET_KEY` firma los tokens de los códigos QR. Si se cambia después de imprimir etiquetas, todos los códigos existentes dejan de verificar. Configúralo una vez y consérvalo.
 
 ## 🔒 Seguridad Avanzada
 

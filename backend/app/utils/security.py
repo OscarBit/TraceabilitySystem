@@ -1,11 +1,24 @@
 import hmac
 import hashlib
 import os
+import secrets
+import warnings
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_dev_key_change_in_prod")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    # No committed fallback: a shared default would let anyone forge QR tokens.
+    # Development gets a throwaway key; docker-compose refuses to start without
+    # a real one. Note that QR tokens minted under a throwaway key stop
+    # verifying when the process restarts.
+    SECRET_KEY = secrets.token_hex(32)
+    warnings.warn(
+        "SECRET_KEY is not set. Using a random key for this process only; "
+        "QR tokens will not verify after a restart.",
+        RuntimeWarning,
+    )
 
 def generate_qr_token(identifier: str) -> str:
     """
