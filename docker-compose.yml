@@ -1,30 +1,53 @@
-version: '3.8'
-
 services:
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: gemstone-backend
-    ports:
-      - "8000:8000"
+    container_name: gemstonex-trace-backend
+    # Not published to the host: reachable only through the frontend proxy.
+    expose:
+      - "8000"
     volumes:
-      - gemstone-data:/app
+      # Persistent data lives under /app/data so the volume does not shadow
+      # the application code copied to /app by the Dockerfile.
+      - trace-data:/app/data
     environment:
-      - DATABASE_URL=sqlite:///./gemstone.db
+      - DATABASE_URL=sqlite:////app/data/gemstone.db
+      - UPLOAD_DIR=/app/data/uploads
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env}
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in .env}
     restart: always
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: gemstone-frontend
-    ports:
-      - "80:80"
+      args:
+        VITE_API_URL: /api
+    container_name: gemstonex-trace-frontend
+    expose:
+      - "80"
     depends_on:
       - backend
     restart: always
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: gemstonex-trace-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+    restart: always
+
 volumes:
-  gemstone-data:
-    description: Persistent volume for SQLite and uploads
+  trace-data:
+  caddy-data:
+  caddy-config:

@@ -4,10 +4,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-# We need to build with the production API URL, this can be passed as an ARG later,
-# for now we'll rely on relative paths or Nginx proxy if needed.
-# Since it's a SPA and hits a backend on another port, typically we set VITE_API_URL at build time.
-# We'll use a placeholder or assume it's passed via docker-compose build args.
+# The SPA and API share one origin in production, so the API base path is
+# simply /api and nginx proxies it through to the backend.
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Production stage

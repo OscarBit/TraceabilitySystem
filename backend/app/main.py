@@ -1,29 +1,25 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="GemStoneX API", description="Sistema de Trazabilidad de Inventario")
+app = FastAPI(title="GemstoneX Trace API", description="Sistema de Trazabilidad de Inventario")
 
-# Configurar CORS para permitir solicitudes del frontend (React)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # En producción cambiar por la URL del frontend
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-VALID_DEVICE_CODE = os.getenv("DEVICE_CODE", "dev_device_12345")
-
-async def verify_device_code(x_device_code: str = Header(None)):
-    if not x_device_code or x_device_code != VALID_DEVICE_CODE:
-        raise HTTPException(
-            status_code=403,
-            detail="Dispositivo no autorizado. Falta o es incorrecto el header X-Device-Code."
-        )
+# En produccion el SPA y el API comparten origen (nginx enruta /api al backend),
+# asi que no hace falta CORS. Solo el servidor de desarrollo de Vite lo necesita.
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()
+]
+if ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 from app.routers import personas, lotes, piedras, dashboard, auth
 from app.auth import get_current_user
@@ -35,9 +31,11 @@ import os
 from PIL import Image
 import io
 
-# Mount uploads directory
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Mount uploads directory. In the container this points at /app/data/uploads,
+# which is on the mounted volume, so photos survive image rebuilds.
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "data/uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(personas.router, dependencies=[Depends(get_current_user)])
@@ -51,7 +49,7 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File must be an image")
     
     unique_filename = f"{uuid.uuid4()}.webp"
-    file_path = f"uploads/{unique_filename}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
     
     contents = await file.read()
     
