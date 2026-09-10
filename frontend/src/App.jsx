@@ -28,7 +28,7 @@ function Home() {
       
        <div className="p-8 rounded-2xl bg-card border border-border shadow-2xl hover:border-emerald-500/50 transition-all duration-300 group">
          <h2 className="text-2xl font-bold mb-4 text-primary group-hover:text-emerald-400 transition-colors">Visor de Trazabilidad</h2>
-         <p className="text-gray-400 leading-relaxed mb-4">Ingresa el ID de la piedra (ej. GSX-2026-001-001) escaneado desde el QR.</p>
+         <p className="text-gray-400 leading-relaxed mb-4">Ingresa el ID de la piedra (ej. GSX-T-2026-001-001) escaneado desde el QR.</p>
           <div className="flex flex-col gap-4">
              <div className="flex gap-2">
                 <input 

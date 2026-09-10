@@ -13,7 +13,7 @@ def create_lote(lote_data: LoteCreate, db: Session = Depends(get_db)):
     # Generar un ID para el lote (en prod sería auto-incrementado o con prefijo de año)
     year = datetime.now().year
     count = db.query(Lote).count() + 1
-    lote_id = f"GSX-{year}-{count:03d}"
+    lote_id = f"GSX-T-{year}-{count:03d}"
     
     lote_qr = generate_qr_token(lote_id)
     
