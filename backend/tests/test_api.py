@@ -74,7 +74,7 @@ def test_create_lote(auth_headers, setup_db):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["id"].startswith("GSX-")
+    assert data["id"].startswith("GSX-T-")
     assert len(data["piedras_generadas"]) == 2
     TestState.test_piedras = data["piedras_generadas"]
 

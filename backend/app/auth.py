@@ -1,3 +1,5 @@
+import secrets
+import warnings
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -9,7 +11,17 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Persona
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-default-key-for-dev")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    # No committed fallback: a shared default would let anyone mint valid
+    # login tokens. Development gets a throwaway key; docker-compose refuses
+    # to start without a real one.
+    SECRET_KEY = secrets.token_hex(32)
+    warnings.warn(
+        "JWT_SECRET_KEY is not set. Using a random key for this process only; "
+        "existing sessions will not survive a restart.",
+        RuntimeWarning,
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 

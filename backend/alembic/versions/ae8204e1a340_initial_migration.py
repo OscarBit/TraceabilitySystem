@@ -24,10 +24,14 @@ def upgrade() -> None:
     op.create_table('personas',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sa.String(length=255), nullable=False),
-    sa.Column('rol', sa.Enum('Cliente', 'Operador', 'Tallador', name='rolpersona'), nullable=False),
+    sa.Column('rol', sa.Enum('Cliente', 'Operador', 'Tallador', 'Administrador', name='rolpersona'), nullable=False),
+    sa.Column('username', sa.String(length=50), nullable=True),
+    sa.Column('password_hash', sa.String(length=255), nullable=True),
+    sa.Column('two_factor_code', sa.String(length=10), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_personas_id'), 'personas', ['id'], unique=False)
+    op.create_index(op.f('ix_personas_username'), 'personas', ['username'], unique=True)
     op.create_table('ubicaciones',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sa.String(length=255), nullable=False),
@@ -90,6 +94,7 @@ def downgrade() -> None:
     op.drop_table('lotes')
     op.drop_index(op.f('ix_ubicaciones_id'), table_name='ubicaciones')
     op.drop_table('ubicaciones')
+    op.drop_index(op.f('ix_personas_username'), table_name='personas')
     op.drop_index(op.f('ix_personas_id'), table_name='personas')
     op.drop_table('personas')
     # ### end Alembic commands ###

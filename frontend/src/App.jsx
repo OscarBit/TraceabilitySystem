@@ -28,7 +28,7 @@ function Home() {
       
        <div className="p-8 rounded-2xl bg-card border border-border shadow-2xl hover:border-emerald-500/50 transition-all duration-300 group">
          <h2 className="text-2xl font-bold mb-4 text-primary group-hover:text-emerald-400 transition-colors">Visor de Trazabilidad</h2>
-         <p className="text-gray-400 leading-relaxed mb-4">Ingresa el ID de la piedra (ej. GSX-2026-001-001) escaneado desde el QR.</p>
+         <p className="text-gray-400 leading-relaxed mb-4">Ingresa el ID de la piedra (ej. GSX-T-2026-001-001) escaneado desde el QR.</p>
           <div className="flex flex-col gap-4">
              <div className="flex gap-2">
                 <input 
@@ -152,7 +152,7 @@ function Recepcion() {
              <h3 className="text-xl font-bold text-white print:text-black">Lote Principal: {loteGenerado.id}</h3>
              <p className="text-gray-400 print:text-gray-600">Este QR identifica el lote completo.</p>
              <div className="mt-4 p-4 bg-white inline-block rounded-lg">
-               <QRCodeSVG value={`{"tipo":"lote", "id":"${loteGenerado.id}", "token":"${loteGenerado.qr_token}"}`} size={128} />
+               <QRCodeSVG value={`${window.location.origin}/lotes/${loteGenerado.id}`} size={128} />
              </div>
            </div>
 
@@ -162,7 +162,7 @@ function Recepcion() {
                <div key={piedra.id} className="border border-gray-700 print:border-gray-300 p-4 rounded-xl flex flex-col items-center gap-2">
                  <p className="font-mono text-sm text-gray-300 print:text-black">{piedra.id}</p>
                  <div className="p-2 bg-white rounded-lg">
-                   <QRCodeSVG value={`{"tipo":"piedra", "id":"${piedra.id}", "token":"${piedra.qr_token}"}`} size={100} />
+                   <QRCodeSVG value={`${window.location.origin}/trazabilidad/${piedra.id}`} size={100} />
                  </div>
                </div>
              ))}

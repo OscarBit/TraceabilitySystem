@@ -74,7 +74,7 @@ export default function DashboardViewer() {
             type="text" 
             value={loteId} 
             onChange={e => setLoteId(e.target.value)}
-            placeholder="Ej: GSX-2026..."
+            placeholder="Ej: GSX-T-2026..."
             className="w-full bg-input border border-border text-foreground p-2 rounded outline-none focus:border-blue-500"
           />
         </div>

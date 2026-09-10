@@ -6,7 +6,6 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install bcrypt passlib python-jose Pillow # Ensure auth and image dependencies are present
 
 # Copy application code
 COPY . .

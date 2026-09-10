@@ -1,0 +1,6 @@
+# Terminates TLS and forwards to the SPA container, which in turn proxies
+# /api to the backend. Certificates are obtained automatically from
+# Let's Encrypt for whatever DOMAIN is set in .env.
+{$DOMAIN} {
+	reverse_proxy frontend:80
+}
