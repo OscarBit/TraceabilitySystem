@@ -100,6 +100,14 @@ Para ejecutarlas, ingresa al backend con el entorno virtual activado y ejecuta:
 pytest tests/
 ```
 
+## 🔄 Reinicio de la Base de Datos
+
+Si necesitas limpiar la base de datos por completo y volver a crear el usuario Administrador por defecto (`admin` / `admin123`), hemos provisto un script automatizado que puedes ejecutar dentro del contenedor Docker:
+
+```bash
+docker compose exec backend python reset_db.py
+```
+
 ## 🔗 Endpoints Principales (API)
 
 - **Auth**:
