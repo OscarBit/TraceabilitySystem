@@ -5,11 +5,12 @@ from app.database import get_db
 from app.models import Lote, Piedra, EstadoPiedra, HistorialEstadoPiedra
 from app.schemas.base import LoteCreate, LoteResponse, LoteDetailResponse
 from app.utils.security import generate_qr_token
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/lotes", tags=["lotes"])
 
 @router.post("/", response_model=LoteResponse)
-def create_lote(lote_data: LoteCreate, db: Session = Depends(get_db)):
+def create_lote(lote_data: LoteCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     # Generar un ID para el lote (en prod sería auto-incrementado o con prefijo de año)
     year = datetime.now().year
     count = db.query(Lote).count() + 1

@@ -4,11 +4,12 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Piedra, HistorialEstadoPiedra, EstadoPiedra
 from app.schemas.base import PiedraEstadoUpdate, HistorialEstadoResponse, PlanCorteUpdate
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/piedras", tags=["piedras"])
 
 @router.post("/{id}/estado", response_model=HistorialEstadoResponse)
-def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depends(get_db)):
+def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     piedra = db.query(Piedra).filter(Piedra.id == id).first()
     if not piedra:
         raise HTTPException(status_code=404, detail="Piedra no encontrada")
@@ -104,7 +105,7 @@ def get_piedra_historial(id: str, db: Session = Depends(get_db)):
     return historial
 
 @router.patch("/{id}/plan_corte")
-def update_plan_corte(id: str, data: PlanCorteUpdate, db: Session = Depends(get_db)):
+def update_plan_corte(id: str, data: PlanCorteUpdate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     piedra = db.query(Piedra).filter(Piedra.id == id).first()
     if not piedra:
         raise HTTPException(status_code=404, detail="Piedra no encontrada")

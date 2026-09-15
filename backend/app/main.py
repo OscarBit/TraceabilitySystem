@@ -10,7 +10,7 @@ app = FastAPI(title="GemStoneX API", description="Sistema de Trazabilidad de Inv
 # Configurar CORS para permitir solicitudes del frontend (React)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # En producción cambiar por la URL del frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,8 +41,8 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(personas.router, dependencies=[Depends(get_current_user)])
-app.include_router(lotes.router, dependencies=[Depends(get_current_user)])
-app.include_router(piedras.router, dependencies=[Depends(get_current_user)])
+app.include_router(lotes.router)
+app.include_router(piedras.router)
 app.include_router(dashboard.router, dependencies=[Depends(get_current_user)])
 
 @app.post("/upload/image", dependencies=[Depends(get_current_user)])

@@ -27,4 +27,3 @@ services:
 
 volumes:
   gemstone-data:
-    description: Persistent volume for SQLite and uploads
