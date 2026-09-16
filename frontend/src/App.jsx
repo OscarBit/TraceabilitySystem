@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import DynamicActorSelect from './components/DynamicActorSelect';
 import StoneViewer from './components/StoneViewer';
@@ -9,6 +9,15 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Navbar from './components/Navbar';
 import { fetchAuth } from './utils/api';
+
+// ProtectedRoute Component
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
 
 // Home Component
 function Home() {
@@ -241,11 +250,11 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={<Home />} />
-        <Route path="/recepcion" element={<Recepcion />} />
-        <Route path="/trazabilidad/:id" element={<div className="w-full max-w-4xl"><StoneViewer /></div>} />
-        <Route path="/lotes/:id" element={<div className="w-full max-w-6xl"><LoteViewer /></div>} />
-        <Route path="/dashboard" element={<div className="w-full"><DashboardViewer /></div>} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/recepcion" element={<ProtectedRoute><Recepcion /></ProtectedRoute>} />
+        <Route path="/trazabilidad/:id" element={<ProtectedRoute><div className="w-full max-w-4xl"><StoneViewer /></div></ProtectedRoute>} />
+        <Route path="/lotes/:id" element={<ProtectedRoute><div className="w-full max-w-6xl"><LoteViewer /></div></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><div className="w-full"><DashboardViewer /></div></ProtectedRoute>} />
       </Routes>
     </div>
   );

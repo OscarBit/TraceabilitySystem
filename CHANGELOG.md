@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - **Two-Factor Authentication (2FA)**: Added simulated 2FA for users with the `Administrador` role. When logging in, a 6-digit code is generated and printed to the backend console.
 
 ### Fixed
+- **Route Protection**: Implemented a `ProtectedRoute` component in `App.jsx` to prevent unauthenticated access to the main application routes (`/`, `/recepcion`, `/trazabilidad`, `/lotes`, `/dashboard`), redirecting users without a valid session to the `/login` page.
 - **CORS Conflict**: Modified `allow_credentials` to `False` in `backend/app/main.py` to resolve conflicts when `allow_origins=["*"]` is active.
 - **Registration Authorization**: Fixed the user creation flow (`Register.jsx`) by including the JWT `Authorization` header in the `fetch` request, allowing authenticated Administrators to correctly register new users.
 - **Docker Compose**: Removed the deprecated `version` attribute from `docker-compose.yml`.

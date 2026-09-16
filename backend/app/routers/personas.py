@@ -17,3 +17,7 @@ def create_persona(persona: PersonaCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=list[PersonaResponse])
 def get_personas(db: Session = Depends(get_db)):
     return db.query(Persona).all()
+
+@router.get("/rol/{rol}", response_model=list[PersonaResponse])
+def get_personas_by_rol(rol: str, db: Session = Depends(get_db)):
+    return db.query(Persona).filter(Persona.rol == rol).all()

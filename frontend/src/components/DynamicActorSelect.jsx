@@ -10,10 +10,6 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
   const [successMsg, setSuccessMsg] = useState(false);
 
   useEffect(() => {
-    fetchActors();
-  }, [role]);
-
-  useEffect(() => {
     if (onIsCreatingChange) {
       onIsCreatingChange(isCreating);
     }
@@ -47,7 +43,7 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
     if (!newActorName.trim()) return;
     setLoading(true);
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas`, {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas/`, {
         method: 'POST',
         body: JSON.stringify({ nombre: newActorName.trim(), rol: role })
       });

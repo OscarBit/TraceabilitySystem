@@ -139,5 +139,6 @@ El frontend estará disponible en el puerto 80 y el backend en el puerto 8000. L
 
 ## 🔒 Seguridad Avanzada
 
+- **Protección de Rutas en el Frontend**: Las rutas principales de la aplicación están protegidas mediante un componente `ProtectedRoute` que verifica la existencia de un token de sesión válido, redireccionando automáticamente a la pantalla de inicio de sesión (`/login`) en caso contrario.
 - **Doble Factor (2FA)**: Al iniciar sesión en el frontend, el backend exigirá un código de seguridad de 6 dígitos. Dado que este entorno no requiere un servidor SMTP por ahora, el código 2FA se imprime de manera simulada en la consola/terminal del proceso backend.
 - **Roles y Privilegios (RBAC)**: Solo los usuarios con rol `Administrador` tienen permitido visualizar el Dashboard de métricas generales y registrar a otros miembros del equipo (`/register`). Las cuentas de los talladores (`Operador`) tienen un acceso enfocado únicamente en la trazabilidad.
