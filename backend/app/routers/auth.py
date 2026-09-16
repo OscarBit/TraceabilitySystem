@@ -34,31 +34,34 @@ async def login_for_access_token(
         )
         
     if user.rol.value == "Administrador":
-        if not two_factor_code:
-            # Generar código 2FA
-            code = str(random.randint(100000, 999999))
-            user.two_factor_code = code
+        import pyotp
+        if not user.totp_secret:
+            # Configuración inicial del 2FA
+            secret = pyotp.random_base32()
+            user.totp_secret = secret
             db.commit()
             
-            print("\n" + "="*50)
-            print(f"*** SIMULACION DE CORREO (2FA) ***")
-            print(f"Para: {user.username}")
-            print(f"Codigo de Verificacion: {code}")
-            print("="*50 + "\n")
+            uri = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="GemStoneX")
             
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="2FA_SETUP_REQUIRED",
+                headers={"X-Provisioning-URI": uri}
+            )
+
+        if not two_factor_code:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="2FA_REQUIRED"
             )
         else:
-            if user.two_factor_code != two_factor_code:
+            totp = pyotp.TOTP(user.totp_secret)
+            if not totp.verify(two_factor_code):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Código 2FA incorrecto"
                 )
-            # Limpiar el código después de usarlo
-            user.two_factor_code = None
-            db.commit()
+            # El secreto TOTP no se borra, es permanente.
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

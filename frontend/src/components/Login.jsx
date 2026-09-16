@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [provisioningUri, setProvisioningUri] = useState(null);
   const [step, setStep] = useState(1);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,11 @@ export default function Login() {
         const errData = await res.json();
         if (errData.detail === "2FA_REQUIRED") {
           setStep(2);
-          setError("Se ha enviado un código de verificación a tu correo.");
+          setError("Ingresa el código de 6 dígitos de tu aplicación Authenticator (Google Authenticator / Authy).");
+        } else if (errData.detail === "2FA_SETUP_REQUIRED") {
+          setStep(2);
+          setProvisioningUri(res.headers.get("X-Provisioning-URI"));
+          setError("Configuración Inicial: Escanea este código QR con tu aplicación Authenticator e ingresa el código generado para verificar.");
         } else {
           setError(errData.detail);
         }
@@ -97,8 +103,13 @@ export default function Login() {
           </div>
           
           {step === 2 && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-              <label className="text-sm font-semibold text-emerald-400">Código de Verificación (2FA)</label>
+            <div className="animate-in fade-in slide-in-from-top-4 duration-300 flex flex-col items-center">
+              {provisioningUri && (
+                <div className="mb-6 p-4 bg-white rounded-lg shadow-inner">
+                  <QRCodeSVG value={provisioningUri} size={150} />
+                </div>
+              )}
+              <label className="text-sm font-semibold text-emerald-400 self-start">Código de Verificación (2FA)</label>
               <input 
                 type="text" 
                 required
@@ -109,7 +120,7 @@ export default function Login() {
                 autoFocus
               />
               <p className="text-xs text-gray-400 mt-2 text-center">
-                Revisa la consola del backend para ver el código simulado.
+                Abre tu aplicación Authenticator e ingresa el código temporal.
               </p>
             </div>
           )}

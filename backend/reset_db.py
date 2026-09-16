@@ -14,21 +14,27 @@ def reset_database():
     db = SessionLocal()
     
     try:
-        # Create hashed password for admin123
+        admin_username = os.getenv("ADMIN_USERNAME", "admin")
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+        admin_email = os.getenv("ADMIN_EMAIL", "oebolanoso@unal.edu.co")
+        admin_nombre = os.getenv("ADMIN_NOMBRE", "Administrador Principal")
+
+        # Create hashed password
         salt = bcrypt.gensalt()
-        hashed_password = bcrypt.hashpw(b"admin123", salt).decode('utf-8')
+        hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), salt).decode('utf-8')
         
         # Create admin user
         admin_user = Persona(
-            nombre="Administrador Principal",
-            username="admin",
+            nombre=admin_nombre,
+            username=admin_username,
+            email=admin_email,
             password_hash=hashed_password,
             rol=RolPersona.Administrador
         )
         
         db.add(admin_user)
         db.commit()
-        print("Admin user created successfully! Username: admin | Password: admin123")
+        print(f"Admin user created successfully! Username: {admin_username} | Email: {admin_email}")
     except Exception as e:
         print(f"Error seeding admin user: {e}")
         db.rollback()

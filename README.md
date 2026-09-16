@@ -102,10 +102,22 @@ pytest tests/
 
 ## 🔄 Reinicio de la Base de Datos
 
-Si necesitas limpiar la base de datos por completo y volver a crear el usuario Administrador por defecto (`admin` / `admin123`), hemos provisto un script automatizado que puedes ejecutar dentro del contenedor Docker:
+Si necesitas limpiar la base de datos por completo y volver a crear el usuario Administrador, hemos provisto un script automatizado que puedes ejecutar dentro del contenedor Docker:
 
 ```bash
 docker compose exec backend python reset_db.py
+```
+
+### Configuración del Administrador Vía Variables de Entorno (.env)
+
+El script `reset_db.py` crea un usuario dinámicamente si configuras las variables en un archivo `.env` en la raíz del proyecto. Si no lo haces, usará las por defecto (`admin/admin123`).
+
+Ejemplo de `.env`:
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+ADMIN_EMAIL=admin@empresa.com
+ADMIN_NOMBRE=Administrador Principal
 ```
 
 ## 🔗 Endpoints Principales (API)
@@ -140,5 +152,5 @@ El frontend estará disponible en el puerto 80 y el backend en el puerto 8000. L
 ## 🔒 Seguridad Avanzada
 
 - **Protección de Rutas en el Frontend**: Las rutas principales de la aplicación están protegidas mediante un componente `ProtectedRoute` que verifica la existencia de un token de sesión válido, redireccionando automáticamente a la pantalla de inicio de sesión (`/login`) en caso contrario.
-- **Doble Factor (2FA)**: Al iniciar sesión en el frontend, el backend exigirá un código de seguridad de 6 dígitos. Dado que este entorno no requiere un servidor SMTP por ahora, el código 2FA se imprime de manera simulada en la consola/terminal del proceso backend.
+- **Doble Factor (TOTP 2FA)**: Al iniciar sesión en el frontend, el backend exigirá un código de seguridad de 6 dígitos al rol `Administrador`. La primera vez se mostrará un **Código QR** para vincular aplicaciones como Google Authenticator o Authy.
 - **Roles y Privilegios (RBAC)**: Solo los usuarios con rol `Administrador` tienen permitido visualizar el Dashboard de métricas generales y registrar a otros miembros del equipo (`/register`). Las cuentas de los talladores (`Operador`) tienen un acceso enfocado únicamente en la trazabilidad.

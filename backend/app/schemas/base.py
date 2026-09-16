@@ -7,6 +7,7 @@ from app.models import RolPersona, EstadoPiedra
 class PersonaBase(BaseModel):
     nombre: str
     rol: RolPersona
+    email: Optional[str] = None
 
 class PersonaCreate(PersonaBase):
     pass

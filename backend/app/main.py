@@ -14,6 +14,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 VALID_DEVICE_CODE = os.getenv("DEVICE_CODE", "dev_device_12345")

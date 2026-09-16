@@ -7,8 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Database Reset Script**: Created `backend/reset_db.py` to easily reset the database to a fresh state and automatically seed the initial `Administrador` account (`admin`/`admin123`). This script can be run inside the Docker container via `docker compose exec backend python reset_db.py`.
 - **Nginx Reverse Proxy**: Configured an Nginx reverse proxy for `/api/` requests in the frontend container to securely bypass browser security port-scanning blocks.
-- **Two-Factor Authentication (2FA)**: Added simulated 2FA for users with the `Administrador` role. When logging in, a 6-digit code is generated and printed to the backend console.
-
+- **Two-Factor Authentication (TOTP 2FA)**: Implemented full TOTP-based Two-Factor Authentication for the `Administrador` role using Google Authenticator / Authy. Includes QR code generation for initial setup (`2FA_SETUP_REQUIRED`) and code verification via `pyotp`.
+- **Admin Configuration & Email**: Added an `email` column to the `Persona` model. The initial admin account can now be dynamically configured via environment variables (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_NOMBRE`) in an `.env` file instead of being hardcoded. Added `PUT /personas/{id}/email` to update the email.
 ### Fixed
 - **Route Protection**: Implemented a `ProtectedRoute` component in `App.jsx` to prevent unauthenticated access to the main application routes (`/`, `/recepcion`, `/trazabilidad`, `/lotes`, `/dashboard`), redirecting users without a valid session to the `/login` page.
 - **CORS Conflict**: Modified `allow_credentials` to `False` in `backend/app/main.py` to resolve conflicts when `allow_origins=["*"]` is active.

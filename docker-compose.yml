@@ -10,6 +10,8 @@ services:
       - "8000:8000"
     volumes:
       - gemstone-data:/app
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=sqlite:///./gemstone.db
     restart: always

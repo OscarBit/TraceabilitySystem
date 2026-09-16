@@ -23,8 +23,10 @@ class Persona(Base):
     nombre = Column(String(255), nullable=False)
     rol = Column(Enum(RolPersona), nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=True)
+    email = Column(String(255), unique=True, index=True, nullable=True)
     password_hash = Column(String(255), nullable=True)
     two_factor_code = Column(String(10), nullable=True)
+    totp_secret = Column(String(32), nullable=True)
 
 class Ubicacion(Base):
     __tablename__ = "ubicaciones"
