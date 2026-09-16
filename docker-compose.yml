@@ -9,11 +9,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - gemstone-data:/app
+      - gemstone-data:/app/data
+      - gemstone-uploads:/app/uploads
     env_file:
       - .env
     environment:
-      - DATABASE_URL=sqlite:///./gemstone.db
+      - DATABASE_URL=sqlite:///./data/gemstone.db
     restart: always
 
   frontend:
@@ -29,3 +30,4 @@ services:
 
 volumes:
   gemstone-data:
+  gemstone-uploads:
