@@ -38,6 +38,16 @@ services:
 
 volumes:
   gemstone-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/gemstonex-vol/data
   gemstone-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/gemstonex-vol/uploads
   caddy_data:
   caddy_config:
