@@ -1,13 +1,23 @@
 version: '3.8'
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: gemstone-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
     container_name: gemstone-backend
-    ports:
-      - "8000:8000"
     volumes:
       - gemstone-data:/app/data
       - gemstone-uploads:/app/uploads
@@ -22,8 +32,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: gemstone-frontend
-    ports:
-      - "80:80"
     depends_on:
       - backend
     restart: always
@@ -31,3 +39,5 @@ services:
 volumes:
   gemstone-data:
   gemstone-uploads:
+  caddy_data:
+  caddy_config:

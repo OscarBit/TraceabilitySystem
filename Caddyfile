@@ -1,0 +1,5 @@
+trace.gemstonex.com {
+    # The frontend nginx container already routes /api/ to the backend container,
+    # so Caddy only needs to forward all requests to the frontend container.
+    reverse_proxy frontend:80
+}
