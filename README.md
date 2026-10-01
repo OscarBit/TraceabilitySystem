@@ -8,7 +8,7 @@ GemStoneX es una aplicación web moderna diseñada para la gestión y trazabilid
 - **Trazabilidad Individual Inmutable:** Seguimiento detallado del historial de cada piedra (Ingreso, Desbaste, Tallado, Entregado). El peso de la piedra no puede aumentar artificialmente entre etapas.
 - **Deep Linking y Navegación Dinámica:** Utilización de React Router para compartir e incrustar enlaces directos a piedras (`/trazabilidad/:id`) y lotes (`/lotes/:id`).
 - **Autenticación Segura (JWT):** Acceso restringido por roles mediante tokens JWT (JSON Web Tokens) con cifrado `bcrypt` para proteger la inyección de estados.
-- **Generación Automática de Códigos QR:** Creación de identificadores únicos verificables criptográficamente.
+- **Generación Automática de Códigos QR (Navegación Directa):** Creación de códigos QR escaneables con el móvil que resuelven directamente a la URL de la piedra o el lote (ej. `http://localhost:5173/trazabilidad/GSX-1`), y que están protegidos estrictamente por autenticación.
 - **Optimización de Evidencias:** Compresión y conversión al vuelo de imágenes al formato **WebP** usando Pillow, optimizando almacenamiento y tiempos de carga.
 - **Dashboard Estadístico:** Analíticas en tiempo real que permiten supervisar la operación agrupada mediante consultas SQL agregadas para máximo rendimiento.
 
@@ -84,6 +84,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu máquina local.
 3. Crea un archivo `.env` en la raíz de `frontend` (opcional, por defecto es local):
    ```env
    VITE_API_URL=http://localhost:8000
+   VITE_APP_URL=http://localhost:5173
    ```
 4. Inicia el servidor de desarrollo:
    ```bash
