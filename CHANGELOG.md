@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Direct QR URLs**: Added `VITE_APP_URL` environment variable support to generate direct, scannable links in the QR codes instead of raw JSON strings.
 - **Pagination**: Added `skip` and `limit` parameters to the `personas` and `procesos` endpoints to prepare the API for high-volume data fetching.
 - **Frontend Error Boundaries**: Implemented a global React Error Boundary to catch UI rendering crashes and prevent the app from displaying a blank white screen during unhandled exceptions.
 - **Lote Creation Confirmation**: Added a frontend confirmation modal in the Lote reception flow to prevent data entry typos.
