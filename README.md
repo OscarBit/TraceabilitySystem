@@ -136,19 +136,25 @@ ADMIN_NOMBRE=Administrador Principal
 
 ## 🐳 Despliegue con Docker (Producción)
 
-El proyecto está completamente contenerizado para un despliegue rápido y seguro. Al utilizar `docker-compose`, la aplicación es independiente de la plataforma y puedes alojarla donde prefieres.
+El proyecto está completamente contenerizado para un despliegue rápido y seguro. Al utilizar `docker-compose`, la aplicación es independiente de la plataforma y puedes alojarla donde prefieres. La configuración actual incluye un servidor **Caddy** que actúa como proxy inverso y gestiona automáticamente la provisión de certificados **HTTPS (SSL/TLS)** a través de Let's Encrypt.
 
 ### Opciones de Alojamiento Recomendadas:
 1. **Servidor VPS (Recomendado):** Rentar un servidor Linux en **DigitalOcean**, **Hetzner**, o **AWS Lightsail** (aprox. $5 USD/mes). Solo necesitas clonar el repositorio y ejecutar Docker.
 2. **Red Local (Privado):** Ejecutar Docker Desktop en una computadora física dentro del taller. Los operadores pueden acceder a través de la red Wi-Fi ingresando la IP local del servidor (ej. `http://192.168.1.50`).
 3. **PaaS (Render/Railway):** Despliegue automatizado conectado a GitHub. *(Nota: Requiere configurar volúmenes persistentes adicionales para evitar la pérdida de la base de datos SQLite en reinicios efímeros).*
 
-### Instrucciones de Arranque
-Asegúrate de tener Docker y Docker Compose instalados. En la raíz del proyecto, ejecuta:
+### Instrucciones de Arranque (Producción y HTTPS)
+Asegúrate de tener Docker y Docker Compose instalados. Para desplegar de forma segura en un servidor con dominio:
+
+1. **Configurar el DNS**: Asegúrate de que el registro (A record) de tu dominio (ej. `app.midominio.com`) apunte a la IP pública de tu servidor.
+2. **Editar Caddyfile**: Abre el archivo `Caddyfile` en la raíz del proyecto y reemplaza `trace.gemstonex.com` por tu dominio real.
+3. **Actualizar el Entorno**: En tu archivo `frontend/.env`, configura la variable para que los códigos QR de la aplicación utilicen tu dominio seguro: 
+   `VITE_APP_URL=https://app.midominio.com`
+4. **Desplegar**: En la raíz del proyecto, ejecuta:
 ```bash
 docker-compose up --build -d
 ```
-El frontend estará disponible en el puerto 80 y el backend en el puerto 8000. La base de datos y las imágenes subidas están protegidas por volúmenes persistentes.
+Caddy se encargará automáticamente de obtener un certificado SSL válido y tu frontend estará disponible por HTTPS. La base de datos y las imágenes subidas están protegidas por volúmenes persistentes.
 
 ## 🔒 Seguridad Avanzada
 
