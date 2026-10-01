@@ -1,0 +1,23 @@
+# GemStoneX Coding Rules
+
+These rules dictate the required syntax, libraries, and design patterns for this project.
+
+## Frontend (React + Vite)
+- **Frameworks**: Use React 19 and Vite. Do not use Next.js or Webpack.
+- **Styling**: Strictly use **Tailwind CSS v4**. Do not use inline styles (`style={{}}`) or raw CSS files for component styling.
+- **State Management**: Use **Zustand** for global state. Avoid Redux or Context API unless absolutely necessary for dependency injection.
+- **Routing**: Use **React Router DOM v7**. Protected routes must use the existing `ProtectedRoute` wrapper component.
+- **Testing**: Use **Vitest** and `@testing-library/react`. 
+- **Formatting**: Ensure semantic HTML and use modern ES6+ syntax.
+
+## Backend (FastAPI + Python)
+- **Framework**: Use **FastAPI** with Python 3.12+.
+- **Validation**: Use **Pydantic V2**. Do not use deprecated `class Config:` (use `model_config = ConfigDict(...)` instead).
+- **Database**: Use **SQLAlchemy 2.0** style syntax. The current database is SQLite, but code must remain compatible with PostgreSQL for future migration.
+- **Authentication**: Use `passlib[bcrypt]` for password hashing and `python-jose` for JWT generation. 
+- **Testing**: Use **Pytest**. When adding new tests, utilize the centralized fixtures in `backend/tests/conftest.py` rather than setting up duplicate database engines.
+- **Image Processing**: All image uploads must be processed via `Pillow` and saved exclusively as `.webp` files.
+
+## Git & CI/CD
+- **Commits**: Follow conventional commits (`feat:`, `fix:`, `chore:`, `test:`).
+- **CI/CD**: The project uses GitHub Actions (`.github/workflows/ci.yml`). Any new linting or test scripts must be integrated into this pipeline.
