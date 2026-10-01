@@ -6,6 +6,8 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
+  const [cedula, setCedula] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [rol, setRol] = useState('Operador');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +26,7 @@ export default function Register() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ username, password, rol, nombre })
+        body: JSON.stringify({ username, password, rol, nombre, cedula, telefono })
       });
 
       if (response.ok) {
@@ -67,6 +69,30 @@ export default function Register() {
               required
               className="w-full bg-input border border-border rounded-lg p-3 text-foreground focus:border-blue-500 outline-none transition"
               placeholder="Ej: Juan Pérez"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-300 block mb-1">Cédula / Documento</label>
+            <input 
+              type="text" 
+              value={cedula} 
+              onChange={(e) => setCedula(e.target.value)} 
+              required
+              className="w-full bg-input border border-border rounded-lg p-3 text-foreground focus:border-blue-500 outline-none transition"
+              placeholder="Número de documento"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-300 block mb-1">Teléfono</label>
+            <input 
+              type="text" 
+              value={telefono} 
+              onChange={(e) => setTelefono(e.target.value)} 
+              required
+              className="w-full bg-input border border-border rounded-lg p-3 text-foreground focus:border-blue-500 outline-none transition"
+              placeholder="Número de contacto"
             />
           </div>
 

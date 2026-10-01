@@ -15,12 +15,54 @@ export default function StoneViewer() {
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [procesos, setProcesos] = useState([]);
+  const [showNewProcesoModal, setShowNewProcesoModal] = useState(false);
+  const [newProceso, setNewProceso] = useState({ nombre: '', descripcion: '' });
   const { estadosHistorial, setEstadosHistorial, updatePiedraState } = useStoneStore();
 
+  const token = localStorage.getItem('token');
+  let user = null;
+  try {
+    if (token) user = JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {}
+  const isAdmin = user?.rol === 'Administrador';
+
   useEffect(() => {
-    // Mock fetch or actual fetch to load history
     fetchHistory();
+    fetchProcesos();
   }, [piedraId]);
+
+  const fetchProcesos = async () => {
+    try {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/procesos/`);
+      if (res.ok) {
+        setProcesos(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCrearProceso = async () => {
+    if (!newProceso.nombre) return;
+    try {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/procesos/`, {
+        method: 'POST',
+        body: JSON.stringify(newProceso)
+      });
+      if (res.ok) {
+        setShowNewProcesoModal(false);
+        setNewProceso({ nombre: '', descripcion: '' });
+        fetchProcesos(); // Refresh list
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Error al crear proceso");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error de conexión");
+    }
+  };
 
   const fetchHistory = async () => {
     try {
@@ -69,6 +111,7 @@ export default function StoneViewer() {
         longitud_mm: previousStateRecord.longitud_mm || '',
         ancho_mm: previousStateRecord.ancho_mm || '',
         profundo_mm: previousStateRecord.profundo_mm || '',
+        proceso_id: previousStateRecord.proceso_id || '',
         plan_corte: previousStateRecord.plan_corte || '',
         foto_url: previousStateRecord.foto_url || '',
         notas: ''
@@ -219,29 +262,34 @@ export default function StoneViewer() {
             </div>
         </div>
 
-        {/* Plan Corte - Readonly on everything except Ingreso */}
+        {/* Plan Corte / Proceso */}
         <div className="col-span-1 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-300">Plan de Corte</label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm font-semibold text-gray-300">Proceso (Plan de Corte / Tratamiento)</label>
+            {isAdmin && !isReadOnly && activeTab === 'Ingreso' && (
+              <button 
+                onClick={() => setShowNewProcesoModal(true)}
+                className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded transition"
+              >
+                + Nuevo Proceso
+              </button>
+            )}
+          </div>
           <select 
-             name="plan_corte" 
-             value={formData.plan_corte || ''} 
+             name="proceso_id" 
+             value={formData.proceso_id || ''} 
              onChange={handleChange} 
              disabled={isReadOnly || activeTab !== 'Ingreso'} 
              className="w-full p-2.5 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 outline-none focus:border-blue-500"
           >
-             <option value="" disabled>Seleccione...</option>
-             <option value="Corte Esmeralda">Corte Esmeralda</option>
-             <option value="Ovalo">Ovalo</option>
-             <option value="Cojín">Cojín</option>
-             <option value="Pera">Pera</option>
-             <option value="Redondo">Redondo</option>
-             <option value="Asscher">Asscher</option>
-             <option value="Octágono">Octágono</option>
-             <option value="Corazón">Corazón</option>
-             <option value="Cabujón">Cabujón</option>
-             <option value="Trillion">Trillion</option>
-             <option value="Fantasía">Fantasía</option>
+             <option value="" disabled>Seleccione un proceso...</option>
+             {procesos.map(p => (
+               <option key={p.id} value={p.id}>{p.nombre}</option>
+             ))}
           </select>
+          {isReadOnly && formData.plan_corte && !formData.proceso_id && (
+            <p className="text-xs text-gray-400 mt-1">Antiguo plan: {formData.plan_corte}</p>
+          )}
         </div>
 
         {/* Tallador - Only active from Desbaste onwards */}
@@ -308,6 +356,54 @@ export default function StoneViewer() {
       )}
         </>
       )}
+
+      {/* Modal Nuevo Proceso */}
+      {showNewProcesoModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-card border border-border p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-bold text-white mb-4">Crear Nuevo Proceso</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre</label>
+                <input 
+                  type="text" 
+                  value={newProceso.nombre}
+                  onChange={(e) => setNewProceso({...newProceso, nombre: e.target.value})}
+                  className="w-full bg-input border border-border rounded-lg p-2 text-foreground focus:border-emerald-500 outline-none"
+                  placeholder="Ej: Brillo, Pulido Extra"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Descripción</label>
+                <textarea 
+                  value={newProceso.descripcion}
+                  onChange={(e) => setNewProceso({...newProceso, descripcion: e.target.value})}
+                  className="w-full bg-input border border-border rounded-lg p-2 text-foreground focus:border-emerald-500 outline-none h-20 resize-none"
+                  placeholder="Opcional"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowNewProcesoModal(false)}
+                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleCrearProceso}
+                disabled={!newProceso.nombre}
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-lg transition"
+              >
+                Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
     </div>
   );

@@ -24,6 +24,8 @@ class Persona(Base):
     rol = Column(Enum(RolPersona), nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
+    cedula = Column(String(50), nullable=True)
+    telefono = Column(String(50), nullable=True)
     password_hash = Column(String(255), nullable=True)
     two_factor_code = Column(String(10), nullable=True)
     totp_secret = Column(String(32), nullable=True)
@@ -44,6 +46,8 @@ class Lote(Base):
     responsable_id = Column(Integer, ForeignKey("personas.id"), nullable=False)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
     qr_token = Column(String(255), nullable=True)
+    is_active = Column(Integer, default=1)  # 1 for active, 0 for rejected
+    motivo_anulacion = Column(Text, nullable=True)
 
     cliente = relationship("Persona", foreign_keys=[cliente_id])
     responsable = relationship("Persona", foreign_keys=[responsable_id])
@@ -60,6 +64,13 @@ class Piedra(Base):
     lote = relationship("Lote", back_populates="piedras")
     historial = relationship("HistorialEstadoPiedra", back_populates="piedra", order_by="HistorialEstadoPiedra.fecha_actualizacion")
 
+class Proceso(Base):
+    __tablename__ = "procesos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(255), nullable=False)
+    descripcion = Column(Text, nullable=True)
+
 class HistorialEstadoPiedra(Base):
     __tablename__ = "historial_estados_piedra"
 
@@ -70,7 +81,8 @@ class HistorialEstadoPiedra(Base):
     longitud_mm = Column(Float, nullable=True)
     ancho_mm = Column(Float, nullable=True)
     profundo_mm = Column(Float, nullable=True)
-    plan_corte = Column(String(255), nullable=True)
+    plan_corte = Column(String(255), nullable=True) # Legacy text
+    proceso_id = Column(Integer, ForeignKey("procesos.id"), nullable=True)
     ubicacion_id = Column(Integer, ForeignKey("ubicaciones.id"), nullable=True)
     tallador_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     foto_url = Column(String(1024), nullable=True)
@@ -78,5 +90,6 @@ class HistorialEstadoPiedra(Base):
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow)
 
     piedra = relationship("Piedra", back_populates="historial")
+    proceso = relationship("Proceso")
     ubicacion = relationship("Ubicacion")
     tallador = relationship("Persona")

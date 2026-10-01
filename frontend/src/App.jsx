@@ -96,6 +96,7 @@ function Recepcion() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingCliente, setIsCreatingCliente] = useState(false);
   const [isCreatingOperador, setIsCreatingOperador] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const isCreatingActors = isCreatingCliente || isCreatingOperador;
 
@@ -111,6 +112,11 @@ function Recepcion() {
       return;
     }
     
+    setShowConfirmModal(true);
+  };
+
+  const confirmRegistrarLote = async () => {
+    setShowConfirmModal(false);
     setIsSubmitting(true);
     try {
       const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/`, {
@@ -223,6 +229,49 @@ function Recepcion() {
             {isSubmitting ? 'Registrando...' : isCreatingActors ? 'Guarda los actores (botón verde) para continuar' : 'Registrar Lote y Generar QRs'}
           </button>
        </div>
+
+       {showConfirmModal && (
+         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 print:hidden">
+           <div className="bg-card border border-border p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
+             <h3 className="text-2xl font-bold text-white mb-4">Confirmar Creación de Lote</h3>
+             <p className="text-gray-300 mb-6">Por favor verifica los datos antes de registrar el lote. Esta acción generará las piedras en el sistema.</p>
+             
+             <div className="bg-background border border-border rounded-xl p-4 mb-6 space-y-3">
+               <div className="flex justify-between">
+                 <span className="text-gray-400">Cliente (Dueño ID):</span>
+                 <span className="font-bold text-white">{clienteId}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-400">Operador (ID):</span>
+                 <span className="font-bold text-white">{responsableId}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-400">Cantidad Piedras:</span>
+                 <span className="font-bold text-emerald-400">{cantidadPiedras}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-400">Peso Total (ct):</span>
+                 <span className="font-bold text-blue-400">{pesoTotal} ct</span>
+               </div>
+             </div>
+
+             <div className="flex gap-4">
+               <button 
+                 onClick={() => setShowConfirmModal(false)}
+                 className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition"
+               >
+                 Cancelar
+               </button>
+               <button 
+                 onClick={confirmRegistrarLote}
+                 className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition"
+               >
+                 Confirmar y Crear
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
     </div>
   );
 }

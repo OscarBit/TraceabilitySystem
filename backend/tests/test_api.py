@@ -15,21 +15,6 @@ from app.auth import create_access_token
 import app.models  # Import all models to register with Base
 
 
-@pytest.fixture(scope="module")
-def auth_headers():
-    # Create a test token
-    token = create_access_token({"sub": "testuser", "rol": "Operador"})
-    return {"Authorization": f"Bearer {token}"}
-
-@pytest.fixture(scope="module")
-def setup_db(test_db):
-    # Setup initial database state like Persona
-    db = test_db()
-    test_client = app.models.Persona(id=1, nombre="Test Client", rol="Operador", username="testuser", password_hash="hash")
-    db.add(test_client)
-    db.commit()
-    db.close()
-    
 def test_unauthorized_access(client):
     # Try to access a protected route without token
     response = client.get("/dashboard/stats")
@@ -98,3 +83,25 @@ def test_stone_weight_exceeds_lote(client, auth_headers):
     res = client.post(f"/piedras/{pid2}/estado", json={"estado": "Ingreso", "peso_ct": 2.0}, headers=auth_headers)
     assert res.status_code == 400
     assert "excede el peso total del lote" in res.json()["detail"]
+
+def test_anular_lote(client, auth_headers_admin, auth_headers_operador):
+    response = client.post(
+        "/lotes/",
+        json={"cliente_id": 1, "cantidad_piedras": 2, "peso_total_ct": 10.0, "responsable_id": 1},
+        headers=auth_headers_admin
+    )
+    assert response.status_code == 200, response.json()
+    lote_id = response.json()["id"]
+
+    resp_no_nota = client.post(f"/lotes/{lote_id}/anular", json={"nota": ""}, headers=auth_headers_admin)
+    assert resp_no_nota.status_code == 422
+
+    resp_operador = client.post(f"/lotes/{lote_id}/anular", json={"nota": "Bad lot"}, headers=auth_headers_operador)
+    assert resp_operador.status_code == 403
+
+    resp_ok = client.post(f"/lotes/{lote_id}/anular", json={"nota": "Error de digitacion"}, headers=auth_headers_admin)
+    assert resp_ok.status_code == 200
+    
+    resp_get = client.get(f"/lotes/{lote_id}")
+    assert resp_get.json()["is_active"] == 0
+    assert resp_get.json()["motivo_anulacion"] == "Error de digitacion"

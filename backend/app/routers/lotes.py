@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
 from app.database import get_db
-from app.models import Lote, Piedra, EstadoPiedra, HistorialEstadoPiedra
-from app.schemas.base import LoteCreate, LoteResponse, LoteDetailResponse
+from app.models import Lote, Piedra, EstadoPiedra, HistorialEstadoPiedra, RolPersona
+from app.schemas.base import LoteCreate, LoteResponse, LoteDetailResponse, LoteAnular
 from app.utils.security import generate_qr_token
 from app.auth import get_current_user
 
@@ -69,7 +69,8 @@ def get_lote(id: str, db: Session = Depends(get_db)):
             "estado_actual": piedra.estado_actual,
             "peso_ct": historial.peso_ct if historial else None,
             "tallador_id": historial.tallador_id if historial else None,
-            "plan_corte": historial.plan_corte if historial else None
+            "plan_corte": historial.plan_corte if historial else None,
+            "proceso_id": historial.proceso_id if historial else None
         })
 
     return {
@@ -80,5 +81,26 @@ def get_lote(id: str, db: Session = Depends(get_db)):
         "responsable_id": lote.responsable_id,
         "fecha_registro": lote.fecha_registro,
         "qr_token": lote.qr_token,
+        "is_active": lote.is_active,
+        "motivo_anulacion": lote.motivo_anulacion,
         "piedras": piedras_detalles
     }
+
+@router.post("/{id}/anular")
+def anular_lote(id: str, data: LoteAnular, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    from fastapi import HTTPException
+    if current_user.rol != RolPersona.Administrador:
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden anular lotes")
+        
+    lote = db.query(Lote).filter(Lote.id == id).first()
+    if not lote:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+        
+    if not data.nota or data.nota.strip() == "":
+        raise HTTPException(status_code=422, detail="La nota (motivo) es requerida para anular el lote")
+        
+    lote.is_active = 0
+    lote.motivo_anulacion = data.nota
+    db.commit()
+    
+    return {"message": "Lote anulado exitosamente", "is_active": 0}

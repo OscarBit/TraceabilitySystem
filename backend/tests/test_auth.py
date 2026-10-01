@@ -15,38 +15,40 @@ from app.auth import get_password_hash
 import app.models
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session", autouse=True)
 def setup_users(test_db):
     db = test_db()
-    
-    # Create Operador user
-    operador = app.models.Persona(
-        id=2, 
-        nombre="Test Operador", 
-        rol=app.models.RolPersona.Operador, 
-        username="operador_user", 
-        password_hash=get_password_hash("password123")
-    )
-    
-    # Create Administrador user
-    admin = app.models.Persona(
-        id=3, 
-        nombre="Test Admin", 
-        rol=app.models.RolPersona.Administrador, 
-        username="admin_user", 
-        password_hash=get_password_hash("password123")
-    )
-    
-    db.add(operador)
-    db.add(admin)
-    db.commit()
+    if not db.query(app.models.Persona).filter_by(username="operador_auth").first():
+        operador = app.models.Persona(
+            id=4, 
+            nombre="Test Operador Auth", 
+            rol=app.models.RolPersona.Operador, 
+            username="operador_auth", 
+            password_hash=get_password_hash("password123"),
+            cedula="111111",
+            telefono="3000000000"
+        )
+        
+        admin = app.models.Persona(
+            id=5, 
+            nombre="Test Admin Auth", 
+            rol=app.models.RolPersona.Administrador, 
+            username="admin_auth", 
+            password_hash=get_password_hash("password123"),
+            cedula="222222",
+            telefono="3111111111"
+        )
+        
+        db.add(operador)
+        db.add(admin)
+        db.commit()
     db.close()
 
 def test_login_operador_success(client, setup_users):
     """Operador should login directly without 2FA."""
     response = client.post(
         "/auth/token",
-        data={"username": "operador_user", "password": "password123"}
+        data={"username": "operador_auth", "password": "password123"}
     )
     assert response.status_code == 200
     data = response.json()
@@ -57,18 +59,18 @@ def test_login_admin_first_time(client, setup_users):
     """Admin login first time should return 403 2FA_SETUP_REQUIRED with Provisioning URI."""
     response = client.post(
         "/auth/token",
-        data={"username": "admin_user", "password": "password123"}
+        data={"username": "admin_auth", "password": "password123"}
     )
     assert response.status_code == 403
     assert response.json()["detail"] == "2FA_SETUP_REQUIRED"
     assert "x-provisioning-uri" in response.headers
-    assert "otpauth://totp/GemStoneX:admin_user" in response.headers["x-provisioning-uri"]
+    assert "otpauth://totp/GemStoneX:admin_auth" in response.headers["x-provisioning-uri"]
 
 def test_login_admin_missing_code(client):
     """Admin login second time (without code) should return 403 2FA_REQUIRED."""
     response = client.post(
         "/auth/token",
-        data={"username": "admin_user", "password": "password123"}
+        data={"username": "admin_auth", "password": "password123"}
     )
     assert response.status_code == 403
     assert response.json()["detail"] == "2FA_REQUIRED"
@@ -78,7 +80,7 @@ def test_login_admin_wrong_code(client):
     response = client.post(
         "/auth/token",
         data={
-            "username": "admin_user", 
+            "username": "admin_auth", 
             "password": "password123",
             "two_factor_code": "000000"
         }
@@ -90,7 +92,7 @@ def test_login_admin_correct_code(client, test_db):
     """Admin login with correct TOTP code should return 200."""
     # First, get the secret from DB
     db = test_db()
-    admin = db.query(app.models.Persona).filter_by(username="admin_user").first()
+    admin = db.query(app.models.Persona).filter_by(username="admin_auth").first()
     secret = admin.totp_secret
     db.close()
     
@@ -101,7 +103,7 @@ def test_login_admin_correct_code(client, test_db):
     response = client.post(
         "/auth/token",
         data={
-            "username": "admin_user", 
+            "username": "admin_auth", 
             "password": "password123",
             "two_factor_code": current_code
         }

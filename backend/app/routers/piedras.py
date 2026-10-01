@@ -80,6 +80,7 @@ def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depend
         ancho_mm=data.ancho_mm,
         profundo_mm=data.profundo_mm,
         plan_corte=plan_corte,
+        proceso_id=data.proceso_id,
         ubicacion_id=data.ubicacion_id,
         tallador_id=data.tallador_id,
         foto_url=data.foto_url,
@@ -127,7 +128,8 @@ def update_plan_corte(id: str, data: PlanCorteUpdate, db: Session = Depends(get_
         nuevo_historial = HistorialEstadoPiedra(
             piedra_id=id,
             estado_registrado=EstadoPiedra.Ingreso,
-            plan_corte=data.plan_corte
+            plan_corte=data.plan_corte,
+            proceso_id=data.proceso_id
         )
         db.add(nuevo_historial)
         db.commit()

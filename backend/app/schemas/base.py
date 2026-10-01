@@ -8,11 +8,26 @@ class PersonaBase(BaseModel):
     nombre: str
     rol: RolPersona
     email: Optional[str] = None
+    cedula: Optional[str] = None
+    telefono: Optional[str] = None
 
 class PersonaCreate(PersonaBase):
     pass
 
 class PersonaResponse(PersonaBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# Proceso
+class ProcesoBase(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = None
+
+class ProcesoCreate(ProcesoBase):
+    pass
+
+class ProcesoResponse(ProcesoBase):
     id: int
     class Config:
         from_attributes = True
@@ -36,9 +51,10 @@ class LoteResponse(BaseModel):
 class PiedraListDetailResponse(BaseModel):
     id: str
     estado_actual: EstadoPiedra
-    peso_ct: Optional[float]
-    tallador_id: Optional[int]
-    plan_corte: Optional[str]
+    peso_ct: Optional[float] = None
+    tallador_id: Optional[int] = None
+    plan_corte: Optional[str] = None
+    proceso_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -50,7 +66,9 @@ class LoteDetailResponse(BaseModel):
     peso_total_ct: float
     responsable_id: int
     fecha_registro: datetime
-    qr_token: Optional[str]
+    qr_token: Optional[str] = None
+    is_active: int = 1
+    motivo_anulacion: Optional[str] = None
     piedras: List[PiedraListDetailResponse]
 
     class Config:
@@ -64,13 +82,18 @@ class PiedraEstadoUpdate(BaseModel):
     ancho_mm: Optional[float] = None
     profundo_mm: Optional[float] = None
     plan_corte: Optional[str] = None
+    proceso_id: Optional[int] = None
     ubicacion_id: Optional[int] = None
     tallador_id: Optional[int] = None
     foto_url: Optional[str] = None
     notas: Optional[str] = None
 
 class PlanCorteUpdate(BaseModel):
-    plan_corte: str
+    plan_corte: Optional[str] = None
+    proceso_id: Optional[int] = None
+
+class LoteAnular(BaseModel):
+    nota: str
 
 class HistorialEstadoResponse(BaseModel):
     id: int
@@ -81,6 +104,7 @@ class HistorialEstadoResponse(BaseModel):
     ancho_mm: Optional[float]
     profundo_mm: Optional[float]
     plan_corte: Optional[str]
+    proceso_id: Optional[int]
     ubicacion_id: Optional[int]
     tallador_id: Optional[int]
     foto_url: Optional[str]

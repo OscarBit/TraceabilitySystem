@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Lote Creation Confirmation**: Added a frontend confirmation modal in the Lote reception flow to prevent data entry typos.
+- **Lote Cancellation (Anular Lote)**: Implemented `POST /lotes/{id}/anular` allowing administrators to rescind invalid lots with a mandatory reason. Added corresponding frontend UI in `LoteViewer.jsx`.
+- **Expanded Entity Data**: Added `cedula` and `telefono` fields to the `Persona` model. Administrators can now capture this data during operator/client registration in the frontend.
+- **Dynamic Processing Stages**: Added `Proceso` model and `/procesos/` endpoints. The 'Plan de corte' dropdown now fetches dynamically from the backend, and administrators can define new processes via the UI.
 - **Database Reset Script**: Created `backend/reset_db.py` to easily reset the database to a fresh state and automatically seed the initial `Administrador` account (`admin`/`admin123`). This script can be run inside the Docker container via `docker compose exec backend python reset_db.py`.
 - **Nginx Reverse Proxy**: Configured an Nginx reverse proxy for `/api/` requests in the frontend container to securely bypass browser security port-scanning blocks.
 - **Two-Factor Authentication (TOTP 2FA)**: Implemented full TOTP-based Two-Factor Authentication for the `Administrador` role using Google Authenticator / Authy. Includes QR code generation for initial setup (`2FA_SETUP_REQUIRED`) and code verification via `pyotp`.

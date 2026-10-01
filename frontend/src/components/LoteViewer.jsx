@@ -8,6 +8,16 @@ export default function LoteViewer() {
   const [lote, setLote] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnularModal, setShowAnularModal] = useState(false);
+  const [motivoAnulacion, setMotivoAnulacion] = useState('');
+  const [isAnulando, setIsAnulando] = useState(false);
+
+  const token = localStorage.getItem('token');
+  let user = null;
+  try {
+    if (token) user = JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {}
+  const isAdmin = user?.rol === 'Administrador';
 
   useEffect(() => {
     fetchLote();
@@ -33,6 +43,33 @@ export default function LoteViewer() {
     }
   };
 
+  const handleAnularLote = async () => {
+    if (!motivoAnulacion.trim()) {
+      alert("Debes escribir un motivo para anular el lote");
+      return;
+    }
+    
+    setIsAnulando(true);
+    try {
+      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/${loteId}/anular`, {
+        method: 'POST',
+        body: JSON.stringify({ nota: motivoAnulacion })
+      });
+      if (res.ok) {
+        setShowAnularModal(false);
+        fetchLote(); // Reload the lote
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Error al anular el lote");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error de conexión al anular el lote");
+    } finally {
+      setIsAnulando(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center text-gray-400 p-8">Cargando lote...</div>;
   }
@@ -48,6 +85,14 @@ export default function LoteViewer() {
             <>Detalle del Lote: <span className="text-blue-400">{loteId}</span></>
           )}
         </h2>
+        {isAdmin && lote && lote.is_active !== 0 && !errorMsg && (
+          <button 
+            onClick={() => setShowAnularModal(true)}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded transition cursor-pointer"
+          >
+            Anular Lote
+          </button>
+        )}
       </div>
 
       {errorMsg ? (
@@ -57,6 +102,13 @@ export default function LoteViewer() {
         </div>
       ) : lote && (
         <>
+          {lote.is_active === 0 && (
+            <div className="bg-red-900/30 border border-red-500 text-red-400 p-4 rounded-lg">
+              <h3 className="font-bold text-lg mb-1">Este lote está anulado</h3>
+              <p>Motivo: {lote.motivo_anulacion}</p>
+            </div>
+          )}
+
           {/* Resumen del Lote */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
             <div>
@@ -125,6 +177,42 @@ export default function LoteViewer() {
             </table>
           </div>
         </>
+      )}
+
+      {/* Modal de Anulación */}
+      {showAnularModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-card border border-red-500/50 p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
+            <h3 className="text-2xl font-bold text-red-400 mb-4">Anular Lote</h3>
+            <p className="text-gray-300 mb-4">¿Estás seguro de que deseas anular el lote <strong>{loteId}</strong>? Esta acción invalidará todas las piedras asociadas y no se puede deshacer.</p>
+            
+            <div className="mb-6">
+              <label className="text-sm font-semibold text-gray-300 block mb-2">Motivo de la anulación (Obligatorio)</label>
+              <textarea 
+                value={motivoAnulacion}
+                onChange={(e) => setMotivoAnulacion(e.target.value)}
+                placeholder="Ej: Error de digitación, producto defectuoso..."
+                className="w-full bg-input border border-border rounded-lg p-3 text-foreground focus:border-red-500 outline-none transition resize-none h-24"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowAnularModal(false)}
+                className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAnularLote}
+                disabled={isAnulando || !motivoAnulacion.trim()}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-lg transition"
+              >
+                {isAnulando ? 'Anulando...' : 'Confirmar Anulación'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
