@@ -14,28 +14,6 @@ from app.database import Base, get_db
 from app.auth import create_access_token
 import app.models  # Import all models to register with Base
 
-# Use an in-memory SQLite database for tests
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-fastapi_app.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(fastapi_app)
 
 @pytest.fixture(scope="module")
 def auth_headers():
@@ -44,15 +22,15 @@ def auth_headers():
     return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture(scope="module")
-def setup_db():
+def setup_db(test_db):
     # Setup initial database state like Persona
-    db = TestingSessionLocal()
+    db = test_db()
     test_client = app.models.Persona(id=1, nombre="Test Client", rol="Operador", username="testuser", password_hash="hash")
     db.add(test_client)
     db.commit()
     db.close()
     
-def test_unauthorized_access():
+def test_unauthorized_access(client):
     # Try to access a protected route without token
     response = client.get("/dashboard/stats")
     assert response.status_code == 401
@@ -61,7 +39,7 @@ def test_unauthorized_access():
 class TestState:
     test_piedras = []
 
-def test_create_lote(auth_headers, setup_db):
+def test_create_lote(client, auth_headers, setup_db):
     response = client.post(
         "/lotes/",
         json={
@@ -78,7 +56,7 @@ def test_create_lote(auth_headers, setup_db):
     assert len(data["piedras_generadas"]) == 2
     TestState.test_piedras = data["piedras_generadas"]
 
-def test_stone_weight_exceeds_ingreso(auth_headers):
+def test_stone_weight_exceeds_ingreso(client, auth_headers):
     piedra_id = TestState.test_piedras[0]["id"]
     
     # 1. Update status to Ingreso with weight 3.0
@@ -97,7 +75,7 @@ def test_stone_weight_exceeds_ingreso(auth_headers):
     assert res.status_code == 400
     assert "peso no puede ser mayor al de Ingreso" in res.json()["detail"]
 
-def test_stone_weight_exceeds_lote(auth_headers):
+def test_stone_weight_exceeds_lote(client, auth_headers):
     piedra_id = TestState.test_piedras[0]["id"]
     piedra_id_2 = TestState.test_piedras[1]["id"]
     

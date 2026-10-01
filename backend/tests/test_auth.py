@@ -14,31 +14,10 @@ from app.database import Base, get_db
 from app.auth import get_password_hash
 import app.models
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-fastapi_app.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(fastapi_app)
 
 @pytest.fixture(scope="module")
-def setup_users():
-    db = TestingSessionLocal()
+def setup_users(test_db):
+    db = test_db()
     
     # Create Operador user
     operador = app.models.Persona(
@@ -63,7 +42,7 @@ def setup_users():
     db.commit()
     db.close()
 
-def test_login_operador_success(setup_users):
+def test_login_operador_success(client, setup_users):
     """Operador should login directly without 2FA."""
     response = client.post(
         "/auth/token",
@@ -74,7 +53,7 @@ def test_login_operador_success(setup_users):
     assert "access_token" in data
     assert data["user"]["rol"] == "Operador"
 
-def test_login_admin_first_time(setup_users):
+def test_login_admin_first_time(client, setup_users):
     """Admin login first time should return 403 2FA_SETUP_REQUIRED with Provisioning URI."""
     response = client.post(
         "/auth/token",
@@ -85,7 +64,7 @@ def test_login_admin_first_time(setup_users):
     assert "x-provisioning-uri" in response.headers
     assert "otpauth://totp/GemStoneX:admin_user" in response.headers["x-provisioning-uri"]
 
-def test_login_admin_missing_code():
+def test_login_admin_missing_code(client):
     """Admin login second time (without code) should return 403 2FA_REQUIRED."""
     response = client.post(
         "/auth/token",
@@ -94,7 +73,7 @@ def test_login_admin_missing_code():
     assert response.status_code == 403
     assert response.json()["detail"] == "2FA_REQUIRED"
 
-def test_login_admin_wrong_code():
+def test_login_admin_wrong_code(client):
     """Admin login with wrong TOTP code should return 401."""
     response = client.post(
         "/auth/token",
@@ -107,10 +86,10 @@ def test_login_admin_wrong_code():
     assert response.status_code == 401
     assert response.json()["detail"] == "Código 2FA incorrecto"
 
-def test_login_admin_correct_code():
+def test_login_admin_correct_code(client, test_db):
     """Admin login with correct TOTP code should return 200."""
     # First, get the secret from DB
-    db = TestingSessionLocal()
+    db = test_db()
     admin = db.query(app.models.Persona).filter_by(username="admin_user").first()
     secret = admin.totp_secret
     db.close()

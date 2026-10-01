@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # Override the main backend to not restart and just run tests
+  backend-test:
+    build: 
+      context: ./backend
+    environment:
+      - "DATABASE_URL=sqlite:///:memory:"
+    command: ["pytest", "tests/", "-v"]
+    # No ports exposed, just a runner
+
+  # We don't necessarily need the frontend or proxy to run backend unit tests
+  frontend:
+    profiles:
+      - donotstart
+      
+  caddy:
+    profiles:
+      - donotstart
