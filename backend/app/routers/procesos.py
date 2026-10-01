@@ -8,8 +8,8 @@ from app.auth import get_current_user
 router = APIRouter(prefix="/procesos", tags=["procesos"])
 
 @router.get("/", response_model=list[ProcesoResponse])
-def get_procesos(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return db.query(Proceso).all()
+def get_procesos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    return db.query(Proceso).offset(skip).limit(limit).all()
 
 @router.post("/", response_model=ProcesoResponse)
 def create_proceso(proceso: ProcesoCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):

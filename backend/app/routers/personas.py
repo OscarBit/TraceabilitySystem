@@ -15,12 +15,12 @@ def create_persona(persona: PersonaCreate, db: Session = Depends(get_db)):
     return db_persona
 
 @router.get("/", response_model=list[PersonaResponse])
-def get_personas(db: Session = Depends(get_db)):
-    return db.query(Persona).all()
+def get_personas(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Persona).offset(skip).limit(limit).all()
 
 @router.get("/rol/{rol}", response_model=list[PersonaResponse])
-def get_personas_by_rol(rol: str, db: Session = Depends(get_db)):
-    return db.query(Persona).filter(Persona.rol == rol).all()
+def get_personas_by_rol(rol: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Persona).filter(Persona.rol == rol).offset(skip).limit(limit).all()
 
 from pydantic import BaseModel
 class EmailUpdate(BaseModel):
