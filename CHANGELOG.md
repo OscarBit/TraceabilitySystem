@@ -16,6 +16,15 @@ All notable changes to this project will be documented in this file.
 - **Suite de Pruebas Automatizadas**:
   - `backend/tests/test_ubicaciones.py`: pruebas para listado, autosembrado y permisos RBAC en ubicaciones.
   - `test_qr_token_protection` en `test_api.py`: verificación de bloqueo a operadores sin token o con token inválido y autorización a administradores. (18/18 pruebas aprobadas).
+- **Scripts de Respaldo y Restauración en Caliente**:
+  - `scripts/backup.ps1` y `scripts/backup.sh`: Respaldos en caliente de SQLite con API nativa, copia de fotografías WebP, cálculo de sumas de verificación SHA-256 en manifiesto, compresión ZIP/tar opcional y política de rotación automática (mantener los últimos N respaldos).
+  - `scripts/restore.ps1` y `scripts/restore.sh`: Restauración interactiva con snapshot preventivo automático antes de sobrescribir y reconexión limpia de SQLAlchemy.
+  - `backend/backup.py`: Utilidad nativa de hot backup de SQLite dentro del contenedor sin bloquear lecturas ni escrituras.
+- **Protección Triple en `reset_db.py`**:
+  - Bloqueo en entornos de producción (`ENVIRONMENT=production`).
+  - Confirmación obligatoria interactiva (`DESTRUIR_DATOS`) o flag explícito `--force` en CI/scripts.
+  - Respaldo de emergencia previo (`.pre_reset_<timestamp>.bak`) antes de ejecutar `drop_all()`.
+  - Sembrado completo de usuario Administrador y de las 6 áreas de custodia iniciales.
 - **Soporte de Docker Compose para Producción**: Inclusión de `docker-compose.prod.yml` y unificación de `.env.example` en la raíz.
 
 ### Changed

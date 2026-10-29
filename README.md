@@ -99,16 +99,26 @@ pytest tests/
 
 ## 🔄 Inicialización y Gestión de la Base de Datos
 
-> [!WARNING]
-> El script `reset_db.py` ejecuta `Base.metadata.drop_all()`. **SOLO debe ejecutarse en la instalación inicial en frío**. Una vez que comiences a registrar datos reales en producción, **NUNCA** debes volver a ejecutarlo, o destruirás todas las tablas e historiales.
+### Protección y Seguridad de `reset_db.py`
+El script `backend/reset_db.py` está blindado con tres niveles de protección contra pérdida accidental de datos:
 
-Para la **primera inicialización**:
+1. **Bloqueo en Producción:** Si `ENVIRONMENT=production`, el script se cancela de inmediato y exige la variable explícita `ALLOW_RESET_IN_PRODUCTION=true`.
+2. **Confirmación Obligatoria:**
+   - En consola interactiva: exige al operador escribir exactamente `DESTRUIR_DATOS` para proceder.
+   - En scripts/CI no interactivos: exige pasar el flag explícito `--force` (de lo contrario se cancela con error).
+3. **Respaldo de Emergencia Automático Previo:** Aún si se usa `--force`, el script genera automáticamente un archivo `.pre_reset_<timestamp>.bak` de la base de datos actual en el volumen persistente antes de invocar `drop_all()`.
+4. **Sembrado Completo:** Inicializa el usuario administrador desde `.env` y siembra automáticamente las 6 áreas de custodia iniciales (*Recepción, Bóveda, Desbaste, Talla, Calidad, Cliente*).
+
 ```bash
+# Inicialización en frío interactiva:
 docker compose exec backend python reset_db.py
+
+# Inicialización forzada (por ejemplo en automatizaciones/CI):
+docker compose exec backend python reset_db.py --force
 ```
 
 ### Configuración del Administrador Vía Variables de Entorno (.env)
-El script `reset_db.py` crea el usuario inicial según las variables del archivo `.env` en la raíz del proyecto (por defecto: `admin/admin123`).
+El script crea el usuario inicial según las variables del archivo `.env` en la raíz del proyecto (por defecto: `admin/admin123`).
 
 Ejemplo de `.env` unificado:
 ```env
@@ -147,13 +157,44 @@ GemStoneX opera sobre SQLite bajo el estándar completo **ACID**:
 - **Aislamiento:** SQLite aísla las transacciones a nivel de archivo (equivalente a `SERIALIZABLE`), evitando lecturas sucias (*dirty reads*).
 - **Durabilidad:** Al llamar a `db.commit()`, SQLite ejecuta `fsync()` directo al disco persistente, asegurando que los datos resistan caídas imprevistas del sistema o cortes de energía.
 
-### Protocolo de Respaldo (Backup en Caliente)
-Antes de actualizar la aplicación o por mantenimiento periódico, puedes extraer un snapshot de la base de datos y de las fotos con un solo comando sin detener el servicio:
-```powershell
-# En Windows PowerShell
-docker compose cp gemstone-backend:/app/data/gemstone.db ./backups/gemstone_backup.db
-docker compose cp gemstone-backend:/app/uploads ./backups/uploads_backup
-```
+### 📦 Scripts de Respaldo y Restauración en Caliente
+
+Se incluyen herramientas profesionales de respaldo y restauración tanto para Windows PowerShell como para Linux/VPS:
+
+#### 1. Generar Respaldo en Caliente (Hot Backup):
+Extrae una copia atómica de SQLite (usando la API nativa de backup en caliente sin detener el servidor ni bloquear talladores), respalda las imágenes WebP, calcula sumas de verificación SHA-256 en un manifiesto y aplica rotación automática de archivos antiguos.
+
+- **En Windows (PowerShell):**
+  ```powershell
+  # Respaldo en carpeta:
+  .\scripts\backup.ps1
+
+  # Respaldo comprimido en archivo .zip (manteniendo los últimos 15 respaldos):
+  .\scripts\backup.ps1 -Zip -RetentionCount 15
+  ```
+
+- **En Linux / VPS (Bash):**
+  ```bash
+  chmod +x scripts/*.sh
+  ./scripts/backup.sh 10
+  ```
+
+#### 2. Restaurar un Respaldo:
+Permite recuperar el sistema a un punto previo con creación automática de snapshot de emergencia previo y reinicio de conexiones:
+
+- **En Windows (PowerShell):**
+  ```powershell
+  # Menú interactivo (muestra la lista de respaldos disponibles para seleccionar):
+  .\scripts\restore.ps1
+
+  # Restauración directa por ruta:
+  .\scripts\restore.ps1 -BackupPath "backups\backup_20261029_114502.zip"
+  ```
+
+- **En Linux / VPS (Bash):**
+  ```bash
+  ./scripts/restore.sh backups/backup_20261029_114502.tar.gz
+  ```
 
 ## 🧬 Evolución de Esquemas y Versionamiento en el Tiempo (Alembic)
 

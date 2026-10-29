@@ -18,6 +18,8 @@ The project is a fully functional MVP with containerized deployment.
   - **Dead Code Removal**: Removed unused `verify_device_code` and `X-Device-Code` legacy headers.
   - **Anti-Enumeration QR Capability Tokens**: Validated physical QR scan URLs via cryptographic HMAC `qr_token` for operator access, preventing brute-force sequential stone ID access.
   - **Custody Areas (`Ubicaciones`)**: Implemented `/ubicaciones/` router with auto-seeding of custody states and dynamic selector in `StoneViewer.jsx`.
+  - **Automated Backup & Restore Harness**: Created `scripts/backup.ps1`, `scripts/backup.sh`, `scripts/restore.ps1`, and `scripts/restore.sh` with hot SQLite backups, WebP image volume archival, SHA-256 manifests, and automated retention rotation.
+  - **Destructive Operation Protection**: Hardened `reset_db.py` with 3-tier protection (production environment lock, interactive `DESTRUIR_DATOS` confirmation or `--force` flag, and automated pre-reset emergency snapshot).
   - **Documentation & Testing**: Full API documentation, ACID transaction details, and 18 passing backend pytest tests.
 
 ## 🎯 Active Goals & Next Steps

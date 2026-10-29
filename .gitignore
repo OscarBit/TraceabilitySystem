@@ -18,6 +18,7 @@ dist-ssr/
 *.sqlite
 *.sqlite3
 uploads/
+backups/
 
 # OS generated files
 .DS_Store
