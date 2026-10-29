@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,7 +27,8 @@ export default function Login() {
         formPayload.append('two_factor_code', twoFactorCode);
       }
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${apiUrl}/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -35,8 +38,7 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        setAuth(data.access_token, data.user);
         navigate('/'); // Redirect to Home
       } else if (res.status === 403) {
         const errData = await res.json();

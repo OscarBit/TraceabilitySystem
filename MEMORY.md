@@ -12,12 +12,16 @@ The project is a fully functional MVP with containerized deployment.
   - Frontend uses `vitest` and `@testing-library/react`.
 
 ## 🕒 Recent Milestones (October 2026)
-- **CI/CD Harness**: Added GitHub Actions workflow (`.github/workflows/ci.yml`) to automatically test frontend and backend on push/PR.
-- **Test Isolation**: Fixed a bug where `pytest` modules (`test_api.py` and `test_auth.py`) were sharing an in-memory DB improperly by migrating DB setup to a global `conftest.py`.
-- **Frontend Tests**: Initialized Vitest in the React frontend and added smoke tests for the router/authentication flow.
-- **Admin & Database**: Implemented an automated `reset_db.py` script that seeds an admin account driven by `.env` variables (`ADMIN_USERNAME`, `ADMIN_EMAIL`, etc.).
+- **Codebase Optimization & Cleanup (Phases 1-4)**:
+  - **Asset & Boilerplate Cleanup**: Purged Tailwind v3 legacy config, boilerplate READMEs, unused assets, and orphaned local SQLite files.
+  - **Frontend DRY & Centralized State**: Built Zustand `useAuthStore.js` and refactored `api.js` for auto-resolving relative routes, centralizing Bearer tokens, and unifying 401 logout handling.
+  - **Dead Code Removal**: Removed unused `verify_device_code` and `X-Device-Code` legacy headers.
+  - **Anti-Enumeration QR Capability Tokens**: Validated physical QR scan URLs via cryptographic HMAC `qr_token` for operator access, preventing brute-force sequential stone ID access.
+  - **Custody Areas (`Ubicaciones`)**: Implemented `/ubicaciones/` router with auto-seeding of custody states and dynamic selector in `StoneViewer.jsx`.
+  - **Documentation & Testing**: Full API documentation, ACID transaction details, and 18 passing backend pytest tests.
 
 ## 🎯 Active Goals & Next Steps
+- Implement lot bulk reception by weight (granel / peso total en ct sin conteo previo de piedras).
+- Add processes for spherical roughing (esferas), polishing, and drilling for jewelry fabrication.
 - Expand the frontend Vitest suite to cover the Lote creation and Stone processing views.
-- Ensure all new API endpoints are thoroughly unit-tested before merging.
-- Continuously monitor the `app_gemstone-data` and `app_gemstone-uploads` Docker volumes to prevent accidental data loss in ephemeral deployments (e.g., PaaS platforms).
+- Continuously protect persistent volumes (`gemstone-data` and `gemstone-uploads`).

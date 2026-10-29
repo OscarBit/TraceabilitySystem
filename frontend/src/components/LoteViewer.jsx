@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchAuth } from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function LoteViewer() {
   const { id: loteId } = useParams();
@@ -11,13 +12,7 @@ export default function LoteViewer() {
   const [showAnularModal, setShowAnularModal] = useState(false);
   const [motivoAnulacion, setMotivoAnulacion] = useState('');
   const [isAnulando, setIsAnulando] = useState(false);
-
-  const token = localStorage.getItem('token');
-  let user = null;
-  try {
-    if (token) user = JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {}
-  const isAdmin = user?.rol === 'Administrador';
+  const isAdmin = useAuthStore((state) => state.isAdmin);
 
   useEffect(() => {
     fetchLote();
@@ -27,7 +22,7 @@ export default function LoteViewer() {
     setIsLoading(true);
     try {
       setErrorMsg(null);
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/${loteId}`);
+      const res = await fetchAuth(`/lotes/${loteId}`);
       if (res.ok) {
         const data = await res.json();
         setLote(data);
@@ -51,7 +46,7 @@ export default function LoteViewer() {
     
     setIsAnulando(true);
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/${loteId}/anular`, {
+      const res = await fetchAuth(`/lotes/${loteId}/anular`, {
         method: 'POST',
         body: JSON.stringify({ nota: motivoAnulacion })
       });

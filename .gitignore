@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+docker-compose.override.yml
 
 # Node
 node_modules/
@@ -13,7 +14,9 @@ dist-ssr/
 *.local
 
 # Database & Storage
-gemstone.db
+*.db
+*.sqlite
+*.sqlite3
 uploads/
 
 # OS generated files

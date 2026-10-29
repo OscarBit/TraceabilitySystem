@@ -37,7 +37,7 @@ export default function Recepcion() {
     setShowConfirmModal(false);
     setIsSubmitting(true);
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/lotes/`, {
+      const res = await fetchAuth('/lotes/', {
         method: 'POST',
         body: JSON.stringify({
           cliente_id: parseInt(clienteId),
@@ -66,6 +66,10 @@ export default function Recepcion() {
   };
 
   if (loteGenerado) {
+    const appBaseUrl = (import.meta.env.VITE_APP_URL && !import.meta.env.VITE_APP_URL.includes('localhost'))
+      ? import.meta.env.VITE_APP_URL
+      : window.location.origin;
+
     return (
       <div className="w-full max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-2xl">
          <div className="flex justify-between items-center mb-6 print:hidden">
@@ -85,7 +89,7 @@ export default function Recepcion() {
              <h3 className="text-xl font-bold text-white print:text-black">Lote Principal: {loteGenerado.id}</h3>
              <p className="text-gray-400 print:text-gray-600">Este QR identifica el lote completo.</p>
              <div className="mt-4 p-4 bg-white inline-block rounded-lg">
-               <QRCodeSVG value={`${import.meta.env.VITE_APP_URL}/lotes/${loteGenerado.id}`} size={128} />
+               <QRCodeSVG value={`${appBaseUrl}/lotes/${loteGenerado.id}${loteGenerado.qr_token ? `?token=${loteGenerado.qr_token}` : ''}`} size={128} />
              </div>
            </div>
 
@@ -95,7 +99,7 @@ export default function Recepcion() {
                <div key={piedra.id} className="border border-gray-700 print:border-gray-300 p-4 rounded-xl flex flex-col items-center gap-2">
                  <p className="font-mono text-sm text-gray-300 print:text-black">{piedra.id}</p>
                  <div className="p-2 bg-white rounded-lg">
-                   <QRCodeSVG value={`${import.meta.env.VITE_APP_URL}/trazabilidad/${piedra.id}`} size={100} />
+                   <QRCodeSVG value={`${appBaseUrl}/trazabilidad/${piedra.id}${piedra.qr_token ? `?token=${piedra.qr_token}` : ''}`} size={100} />
                  </div>
                </div>
              ))}

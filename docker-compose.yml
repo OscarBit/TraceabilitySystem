@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   caddy:
     image: caddy:2-alpine
@@ -12,6 +10,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    environment:
+      - CADDY_DOMAIN=${CADDY_DOMAIN:-:80}
 
   backend:
     build: 
@@ -31,6 +31,9 @@ services:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_APP_URL: ${VITE_APP_URL:-http://localhost:5173}
     container_name: gemstone-frontend
     depends_on:
       - backend
@@ -38,16 +41,6 @@ services:
 
 volumes:
   gemstone-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/gemstonex-vol/data
   gemstone-uploads:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/gemstonex-vol/uploads
   caddy_data:
   caddy_config:

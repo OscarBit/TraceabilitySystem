@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchAuth } from '../utils/api';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -19,13 +20,8 @@ export default function Register() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const response = await fetchAuth('/auth/register', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({ username, password, rol, nombre, cedula, telefono })
       });
 

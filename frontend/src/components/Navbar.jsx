@@ -1,31 +1,19 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, UserCircle } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation(); // Force re-render on route change
-  
-  // Extract user info from JWT (sub and rol)
-  const token = localStorage.getItem('token');
-  let user = null;
-  
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      user = { username: payload.sub, rol: payload.rol };
-    } catch (e) {
-      console.error("Invalid token format");
-    }
-  }
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/login');
   };
 
   const handleSwitchUser = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/login');
   };
 

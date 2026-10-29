@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStoneStore } from '../store/useStoneStore';
+import { useAuthStore } from '../store/useAuthStore';
 import DynamicActorSelect from './DynamicActorSelect';
 import { Camera } from 'lucide-react';
 import { fetchAuth } from '../utils/api';
@@ -10,33 +11,44 @@ const ESTADOS = ['Ingreso', 'Desbaste', 'Tallado', 'Entregado'];
 export default function StoneViewer() {
   const { id: piedraId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const qrToken = searchParams.get('token');
+  const fileInputRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState('Ingreso');
   const [formData, setFormData] = useState({});
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [procesos, setProcesos] = useState([]);
+  const [ubicaciones, setUbicaciones] = useState([]);
   const [showNewProcesoModal, setShowNewProcesoModal] = useState(false);
   const [newProceso, setNewProceso] = useState({ nombre: '', descripcion: '' });
   const { estadosHistorial, setEstadosHistorial, updatePiedraState } = useStoneStore();
-
-  const token = localStorage.getItem('token');
-  let user = null;
-  try {
-    if (token) user = JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {}
-  const isAdmin = user?.rol === 'Administrador';
+  const isAdmin = useAuthStore((state) => state.isAdmin);
 
   useEffect(() => {
     fetchHistory();
     fetchProcesos();
+    fetchUbicaciones();
   }, [piedraId]);
 
   const fetchProcesos = async () => {
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/procesos/`);
+      const res = await fetchAuth('/procesos/');
       if (res.ok) {
         setProcesos(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchUbicaciones = async () => {
+    try {
+      const res = await fetchAuth('/ubicaciones/');
+      if (res.ok) {
+        setUbicaciones(await res.json());
       }
     } catch (e) {
       console.error(e);
@@ -46,7 +58,7 @@ export default function StoneViewer() {
   const handleCrearProceso = async () => {
     if (!newProceso.nombre) return;
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/procesos/`, {
+      const res = await fetchAuth('/procesos/', {
         method: 'POST',
         body: JSON.stringify(newProceso)
       });
@@ -67,7 +79,10 @@ export default function StoneViewer() {
   const fetchHistory = async () => {
     try {
       setErrorMsg(null);
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/historial`);
+      const url = qrToken 
+        ? `/piedras/${piedraId}/historial?token=${encodeURIComponent(qrToken)}`
+        : `/piedras/${piedraId}/historial`;
+      const res = await fetchAuth(url);
       if (res.ok) {
         const data = await res.json();
         setEstadosHistorial(data);
@@ -112,6 +127,7 @@ export default function StoneViewer() {
         ancho_mm: previousStateRecord.ancho_mm || '',
         profundo_mm: previousStateRecord.profundo_mm || '',
         proceso_id: previousStateRecord.proceso_id || '',
+        ubicacion_id: previousStateRecord.ubicacion_id || '',
         plan_corte: previousStateRecord.plan_corte || '',
         foto_url: previousStateRecord.foto_url || '',
         notas: ''
@@ -128,7 +144,7 @@ export default function StoneViewer() {
     formPayload.append('file', file);
 
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/upload/image`, {
+      const res = await fetchAuth('/upload/image', {
         method: 'POST',
         body: formPayload
       });
@@ -167,12 +183,14 @@ export default function StoneViewer() {
 
   const handleSave = async () => {
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/piedras/${piedraId}/estado`, {
+      const payload = {
+        estado: activeTab,
+        ...formData,
+        qr_token: qrToken || undefined
+      };
+      const res = await fetchAuth(`/piedras/${piedraId}/estado`, {
         method: 'POST',
-        body: JSON.stringify({
-          estado: activeTab,
-          ...formData
-        })
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
@@ -292,6 +310,30 @@ export default function StoneViewer() {
           )}
         </div>
 
+        {/* Ubicación / Custodia */}
+        <div className="col-span-1 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-300 block mb-1">
+            Ubicación / Área de Custodia
+          </label>
+          <select 
+             name="ubicacion_id" 
+             value={formData.ubicacion_id || ''} 
+             onChange={handleChange} 
+             disabled={isReadOnly} 
+             className="w-full p-2.5 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 outline-none focus:border-blue-500"
+          >
+             <option value="">Seleccione el área o estado de custodia...</option>
+             {ubicaciones.map(u => (
+               <option key={u.id} value={u.id}>
+                 {u.nombre} {u.descripcion ? `— ${u.descripcion}` : ''}
+               </option>
+             ))}
+          </select>
+          {isReadOnly && formData.ubicacion && (
+            <p className="text-xs text-blue-400 mt-1">Área registrada: {formData.ubicacion.nombre}</p>
+          )}
+        </div>
+
         {/* Tallador - Only active from Desbaste onwards */}
         {ESTADOS.indexOf(activeTab) >= 1 && (
           <div className="col-span-1 md:col-span-2">
@@ -316,7 +358,7 @@ export default function StoneViewer() {
           <label className="text-sm font-semibold text-gray-300 mb-2 block">Fotografía del Estado</label>
           <div className="flex items-center gap-4">
             {formData.foto_url && (
-              <img src={formData.foto_url.startsWith('http') ? formData.foto_url : `${import.meta.env.VITE_API_URL}${formData.foto_url}`} alt="Piedra" className="w-32 h-32 object-cover rounded-lg border border-border bg-black" />
+              <img src={formData.foto_url.startsWith('http') ? formData.foto_url : `${import.meta.env.VITE_API_URL || ''}${formData.foto_url}`} alt="Piedra" className="w-32 h-32 object-cover rounded-lg border border-border bg-black" />
             )}
             
             {(!isReadOnly && activeTab !== 'Entregado') && (

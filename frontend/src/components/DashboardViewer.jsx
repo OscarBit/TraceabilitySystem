@@ -30,7 +30,7 @@ export default function DashboardViewer() {
       if (loteId) params.append('lote_id', loteId);
       if (planCorte) params.append('plan_corte', planCorte);
       
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/dashboard/stats?${params.toString()}`);
+      const res = await fetchAuth(`/dashboard/stats?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data);

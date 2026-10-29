@@ -1,5 +1,7 @@
+import { useAuthStore } from '../store/useAuthStore';
+
 export const fetchAuth = async (url, options = {}) => {
-  const token = localStorage.getItem('token');
+  const token = useAuthStore.getState().token || localStorage.getItem('token');
   
   const headers = {
     ...options.headers,
@@ -8,11 +10,6 @@ export const fetchAuth = async (url, options = {}) => {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
-  // Remove X-Device-Code if it exists in old code
-  if (headers['X-Device-Code']) {
-    delete headers['X-Device-Code'];
-  }
   
   if (!(options.body instanceof FormData)) {
      if (!headers['Content-Type']) {
@@ -20,10 +17,19 @@ export const fetchAuth = async (url, options = {}) => {
      }
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const baseUrl = import.meta.env.VITE_API_URL || '/api';
+  let targetUrl = url;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    if (!url.startsWith(baseUrl)) {
+      const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+      targetUrl = `${baseUrl}${cleanUrl}`;
+    }
+  }
+
+  const response = await fetch(targetUrl, { ...options, headers });
   
   if (response.status === 401) {
-    localStorage.removeItem('token');
+    useAuthStore.getState().logout();
     window.location.href = '/login';
   } else if (response.status === 403) {
     // Handling RBAC / 2FA errors

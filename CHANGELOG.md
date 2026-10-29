@@ -5,22 +5,37 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Direct QR URLs**: Added `VITE_APP_URL` environment variable support to generate direct, scannable links in the QR codes instead of raw JSON strings.
-- **Pagination**: Added `skip` and `limit` parameters to the `personas` and `procesos` endpoints to prepare the API for high-volume data fetching.
-- **Frontend Error Boundaries**: Implemented a global React Error Boundary to catch UI rendering crashes and prevent the app from displaying a blank white screen during unhandled exceptions.
-- **Lote Creation Confirmation**: Added a frontend confirmation modal in the Lote reception flow to prevent data entry typos.
-- **Lote Cancellation (Anular Lote)**: Implemented `POST /lotes/{id}/anular` allowing administrators to rescind invalid lots with a mandatory reason. Added corresponding frontend UI in `LoteViewer.jsx`.
-- **Expanded Entity Data**: Added `cedula` and `telefono` fields to the `Persona` model. Administrators can now capture this data during operator/client registration in the frontend.
-- **Dynamic Processing Stages**: Added `Proceso` model and `/procesos/` endpoints. The 'Plan de corte' dropdown now fetches dynamically from the backend, and administrators can define new processes via the UI.
-- **Database Reset Script**: Created `backend/reset_db.py` to easily reset the database to a fresh state and automatically seed the initial `Administrador` account (`admin`/`admin123`). This script can be run inside the Docker container via `docker compose exec backend python reset_db.py`.
-- **Nginx Reverse Proxy**: Configured an Nginx reverse proxy for `/api/` requests in the frontend container to securely bypass browser security port-scanning blocks.
-- **Two-Factor Authentication (TOTP 2FA)**: Implemented full TOTP-based Two-Factor Authentication for the `Administrador` role using Google Authenticator / Authy. Includes QR code generation for initial setup (`2FA_SETUP_REQUIRED`) and code verification via `pyotp`.
-- **Admin Configuration & Email**: Added an `email` column to the `Persona` model. The initial admin account can now be dynamically configured via environment variables (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_NOMBRE`) in an `.env` file instead of being hardcoded. Added `PUT /personas/{id}/email` to update the email.
-### Fixed
-- **Route Protection**: Implemented a `ProtectedRoute` component in `App.jsx` to prevent unauthenticated access to the main application routes (`/`, `/recepcion`, `/trazabilidad`, `/lotes`, `/dashboard`), redirecting users without a valid session to the `/login` page.
-- **CORS Conflict**: Modified `allow_credentials` to `False` in `backend/app/main.py` to resolve conflicts when `allow_origins=["*"]` is active.
-- **Registration Authorization**: Fixed the user creation flow (`Register.jsx`) by including the JWT `Authorization` header in the `fetch` request, allowing authenticated Administrators to correctly register new users.
-- **Docker Compose**: Removed the deprecated `version` attribute from `docker-compose.yml`.
+- **Áreas de Custodia / Ubicaciones**: Nuevo router `backend/app/routers/ubicaciones.py` (`/ubicaciones/`) con autosembrado de etapas departamentales y de custodia (*Recepción*, *Bóveda / Caja Fuerte*, *Área de Desbaste*, *Área de Talla*, *Control de Calidad*, *En manos del Cliente*).
+- **Selector de Custodia en Frontend**: Selector dinámico de área de custodia en `StoneViewer.jsx`, con herencia automática entre estados y badge histórico.
+- **Tokens Criptográficos en Códigos QR (Anti-Enumeración / Anti-Falsificación)**:
+  - Generación de `qr_token` vía HMAC-SHA256 en lotes y piedras.
+  - Codificación física en URLs de códigos QR (`/piedra/{id}?token={qr_token}`).
+  - Validación obligatoria de token en `GET /piedras/{id}/historial` y `POST /piedras/{id}/estado` para usuarios con rol `Operador`, bloqueando accesos por adivinación o predicción secuencial (`GSX-...`).
+  - Acceso administrativo global para `Administrador` desde el dashboard.
+- **Store Centralizado de Autenticación (Zustand)**: Creación de `frontend/src/store/useAuthStore.js` para manejo reactivo y centralizado de credenciales, roles y sincronización de sesión.
+- **Suite de Pruebas Automatizadas**:
+  - `backend/tests/test_ubicaciones.py`: pruebas para listado, autosembrado y permisos RBAC en ubicaciones.
+  - `test_qr_token_protection` en `test_api.py`: verificación de bloqueo a operadores sin token o con token inválido y autorización a administradores. (18/18 pruebas aprobadas).
+- **Soporte de Docker Compose para Producción**: Inclusión de `docker-compose.prod.yml` y unificación de `.env.example` en la raíz.
 
 ### Changed
-- **Frontend Environment**: Updated `VITE_API_URL` to point to `/api` instead of `http://localhost:8000` to utilize the new Nginx reverse proxy.
+- **Cliente API Frontend (DRY)**: Refactorización de `frontend/src/utils/api.js` para autorresolver endpoints relativos (`/lotes/`, `/procesos/`, `/ubicaciones/`) con prefijo `/api` o `VITE_API_URL`, inyección automática de cabeceras `Authorization: Bearer` y cierre de sesión sincronizado ante códigos 401.
+- **Refactorización de Componentes de Frontend**:
+  - `Navbar.jsx`: Eliminación de decodificación manual `atob()` de JWT; uso reactivo de `useAuthStore`.
+  - `Login.jsx`, `Register.jsx`, `LoteViewer.jsx`, `StoneViewer.jsx`, `DynamicActorSelect.jsx`, `DashboardViewer.jsx`: Migración a `fetchAuth` con rutas relativas estandarizadas.
+  - `App.jsx`: `ProtectedRoute` simplificado mediante `useAuthStore`.
+- **Configuración de Caddy**: Adaptado para soportar tanto red local/LAN por HTTP (`CADDY_DOMAIN=:80`) como producción con certificados SSL automáticos.
+- **Alembic**: Actualización de `backend/alembic/env.py` y `backend/alembic.ini` para detección precisa de metadata y evolución de esquemas en SQLite.
+
+### Removed
+- **Código Muerto `verify_device_code`**: Eliminada la función y dependencias en `backend/app/main.py` y su inyección de cabeceras `X-Device-Code` en el frontend.
+- **Archivos Obsoletos y Redundantes**:
+  - `frontend/tailwind.config.js`: Eliminado (Tailwind v4 utiliza `@theme` nativo en `src/index.css`).
+  - `frontend/src/assets/`: Eliminados archivos no utilizados (`hero.png`, `react.svg`, `vite.svg`).
+  - `frontend/README.md`: Eliminado boilerplate de Vite.
+  - `backend/gemstone.db`: Eliminada base de datos local huérfana en favor de volúmenes Docker persistentes.
+
+### Fixed
+- **Sincronización de Base de Datos y Modelos**: Alineadas las columnas `cedula`, `telefono` y `email` en la tabla `personas` para resolver error 500 en inicio de sesión.
+- **URL de Imágenes en Producción**: Corregida la concatenación de `VITE_API_URL` en `StoneViewer.jsx` para evitar rutas mal formadas (`"undefined/uploads/..."`).
+- **Advertencias de Docker Compose**: Retirado el atributo obsoleto `version: '3.8'` de `docker-compose.yml`.

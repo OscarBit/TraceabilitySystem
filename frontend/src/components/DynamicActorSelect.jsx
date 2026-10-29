@@ -18,7 +18,7 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
   useEffect(() => {
     const fetchActors = async () => {
       try {
-        const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas/rol/${role}`);
+        const res = await fetchAuth(`/personas/rol/${role}`);
         if (res.ok) {
           const data = await res.json();
           setActors(data);
@@ -43,7 +43,7 @@ export default function DynamicActorSelect({ label, role, onSelect, value, onIsC
     if (!newActorName.trim()) return;
     setLoading(true);
     try {
-      const res = await fetchAuth(`${import.meta.env.VITE_API_URL}/personas/`, {
+      const res = await fetchAuth('/personas/', {
         method: 'POST',
         body: JSON.stringify({ nombre: newActorName.trim(), rol: role })
       });

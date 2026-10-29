@@ -1,0 +1,18 @@
+version: '3.8'
+
+# Production overrides
+# This file adds absolute bind mounts for persistent storage on the DigitalOcean server.
+
+volumes:
+  gemstone-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/gemstonex-vol/data
+  gemstone-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/gemstonex-vol/uploads

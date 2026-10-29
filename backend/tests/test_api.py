@@ -42,31 +42,30 @@ def test_create_lote(client, auth_headers, setup_db):
     TestState.test_piedras = data["piedras_generadas"]
 
 def test_stone_weight_exceeds_ingreso(client, auth_headers):
-    piedra_id = TestState.test_piedras[0]["id"]
+    piedra = TestState.test_piedras[0]
+    piedra_id = piedra["id"]
+    qr_token = piedra["qr_token"]
     
     # 1. Update status to Ingreso with weight 3.0
     client.post(f"/piedras/{piedra_id}/estado", json={
         "estado": "Ingreso",
         "peso_ct": 3.0,
-        "notas": "Initial"
+        "notas": "Initial",
+        "qr_token": qr_token
     }, headers=auth_headers)
     
     # 2. Try to update to Desbaste with weight 3.5 (should fail)
     res = client.post(f"/piedras/{piedra_id}/estado", json={
         "estado": "Desbaste",
         "peso_ct": 3.5,
-        "notas": "Exceeds weight"
+        "notas": "Exceeds weight",
+        "qr_token": qr_token
     }, headers=auth_headers)
     assert res.status_code == 400
     assert "peso no puede ser mayor al de Ingreso" in res.json()["detail"]
 
 def test_stone_weight_exceeds_lote(client, auth_headers):
-    piedra_id = TestState.test_piedras[0]["id"]
-    piedra_id_2 = TestState.test_piedras[1]["id"]
-    
-    # Update first stone to 9.0 (lote is 10.0)
-    # Actually it's already 3.0 from previous test, let's just make it 9.0 by doing a new state, wait no we must not exceed Ingreso weight!
-    # Ah, let's create a new Lote!
+    # Create a new Lote
     response = client.post(
         "/lotes/",
         json={"cliente_id": 1, "cantidad_piedras": 2, "peso_total_ct": 10.0, "responsable_id": 1},
@@ -74,13 +73,15 @@ def test_stone_weight_exceeds_lote(client, auth_headers):
     )
     new_piedras = response.json()["piedras_generadas"]
     pid1 = new_piedras[0]["id"]
+    qr1 = new_piedras[0]["qr_token"]
     pid2 = new_piedras[1]["id"]
+    qr2 = new_piedras[1]["qr_token"]
     
     # Update pid1 to 9.0
-    client.post(f"/piedras/{pid1}/estado", json={"estado": "Ingreso", "peso_ct": 9.0}, headers=auth_headers)
+    client.post(f"/piedras/{pid1}/estado", json={"estado": "Ingreso", "peso_ct": 9.0, "qr_token": qr1}, headers=auth_headers)
     
     # Update pid2 to 2.0 (9 + 2 = 11 > 10)
-    res = client.post(f"/piedras/{pid2}/estado", json={"estado": "Ingreso", "peso_ct": 2.0}, headers=auth_headers)
+    res = client.post(f"/piedras/{pid2}/estado", json={"estado": "Ingreso", "peso_ct": 2.0, "qr_token": qr2}, headers=auth_headers)
     assert res.status_code == 400
     assert "excede el peso total del lote" in res.json()["detail"]
 
@@ -105,3 +106,37 @@ def test_anular_lote(client, auth_headers_admin, auth_headers_operador):
     resp_get = client.get(f"/lotes/{lote_id}")
     assert resp_get.json()["is_active"] == 0
     assert resp_get.json()["motivo_anulacion"] == "Error de digitacion"
+
+
+def test_qr_token_protection(client, auth_headers_admin, auth_headers_operador):
+    # 1. Create a lote with stones
+    resp = client.post(
+        "/lotes/",
+        json={"cliente_id": 1, "cantidad_piedras": 1, "peso_total_ct": 5.0, "responsable_id": 1},
+        headers=auth_headers_admin
+    )
+    assert resp.status_code == 200
+    lote_data = resp.json()
+    piedra = lote_data["piedras_generadas"][0]
+    piedra_id = piedra["id"]
+    qr_token = piedra["qr_token"]
+    assert qr_token is not None
+
+    # 2. Operador without token should be blocked
+    resp_no_token = client.get(f"/piedras/{piedra_id}/historial", headers=auth_headers_operador)
+    assert resp_no_token.status_code == 403
+    assert "código QR" in resp_no_token.json()["detail"]
+
+    # 3. Operador with invalid token should be blocked
+    resp_bad_token = client.get(f"/piedras/{piedra_id}/historial?token=fake-forged-token", headers=auth_headers_operador)
+    assert resp_bad_token.status_code == 403
+    assert "no válido" in resp_bad_token.json()["detail"]
+
+    # 4. Operador with valid QR token succeeds
+    resp_valid = client.get(f"/piedras/{piedra_id}/historial?token={qr_token}", headers=auth_headers_operador)
+    assert resp_valid.status_code == 200
+
+    # 5. Admin can access without QR token
+    resp_admin = client.get(f"/piedras/{piedra_id}/historial", headers=auth_headers_admin)
+    assert resp_admin.status_code == 200
+

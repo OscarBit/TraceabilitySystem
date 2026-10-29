@@ -32,6 +32,18 @@ class ProcesoResponse(ProcesoBase):
     class Config:
         from_attributes = True
 
+# Ubicacion (Áreas de custodia)
+class UbicacionBase(BaseModel):
+    nombre: str
+
+class UbicacionCreate(UbicacionBase):
+    pass
+
+class UbicacionResponse(UbicacionBase):
+    id: int
+    class Config:
+        from_attributes = True
+
 # Lote
 class LoteCreate(BaseModel):
     cliente_id: int
@@ -87,6 +99,7 @@ class PiedraEstadoUpdate(BaseModel):
     tallador_id: Optional[int] = None
     foto_url: Optional[str] = None
     notas: Optional[str] = None
+    qr_token: Optional[str] = None
 
 class PlanCorteUpdate(BaseModel):
     plan_corte: Optional[str] = None
@@ -110,6 +123,7 @@ class HistorialEstadoResponse(BaseModel):
     foto_url: Optional[str]
     notas: Optional[str]
     fecha_actualizacion: datetime
+    ubicacion: Optional[UbicacionResponse] = None
 
     class Config:
         from_attributes = True

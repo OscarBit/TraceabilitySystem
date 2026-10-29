@@ -12,10 +12,12 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Recepcion from './pages/Recepcion';
 
+import { useAuthStore } from './store/useAuthStore';
+
 // ProtectedRoute Component
 function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('token');
-  if (!token) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   return children;

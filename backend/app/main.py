@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -17,16 +17,8 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-VALID_DEVICE_CODE = os.getenv("DEVICE_CODE", "dev_device_12345")
 
-async def verify_device_code(x_device_code: str = Header(None)):
-    if not x_device_code or x_device_code != VALID_DEVICE_CODE:
-        raise HTTPException(
-            status_code=403,
-            detail="Dispositivo no autorizado. Falta o es incorrecto el header X-Device-Code."
-        )
-
-from app.routers import personas, lotes, piedras, dashboard, auth, procesos
+from app.routers import personas, lotes, piedras, dashboard, auth, procesos, ubicaciones
 from app.auth import get_current_user
 from fastapi.staticfiles import StaticFiles
 from fastapi import UploadFile, File
@@ -46,6 +38,7 @@ app.include_router(lotes.router)
 app.include_router(piedras.router)
 app.include_router(procesos.router, dependencies=[Depends(get_current_user)])
 app.include_router(dashboard.router, dependencies=[Depends(get_current_user)])
+app.include_router(ubicaciones.router, dependencies=[Depends(get_current_user)])
 
 @app.post("/upload/image", dependencies=[Depends(get_current_user)])
 async def upload_image(file: UploadFile = File(...)):

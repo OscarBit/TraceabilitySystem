@@ -81,11 +81,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu máquina local.
    ```bash
    npm install
    ```
-3. Crea un archivo `.env` en la raíz de `frontend` (opcional, por defecto es local):
-   ```env
-   VITE_API_URL=http://localhost:8000
-   VITE_APP_URL=http://localhost:5173
-   ```
+3. Asegúrate de que el archivo `.env` en la raíz del proyecto esté configurado (la configuración por defecto en `.env.example` funciona para entorno local).
 4. Inicia el servidor de desarrollo:
    ```bash
    npm run dev
@@ -101,38 +97,108 @@ Para ejecutarlas, ingresa al backend con el entorno virtual activado y ejecuta:
 pytest tests/
 ```
 
-## 🔄 Reinicio de la Base de Datos
+## 🔄 Inicialización y Gestión de la Base de Datos
 
-Si necesitas limpiar la base de datos por completo y volver a crear el usuario Administrador, hemos provisto un script automatizado que puedes ejecutar dentro del contenedor Docker:
+> [!WARNING]
+> El script `reset_db.py` ejecuta `Base.metadata.drop_all()`. **SOLO debe ejecutarse en la instalación inicial en frío**. Una vez que comiences a registrar datos reales en producción, **NUNCA** debes volver a ejecutarlo, o destruirás todas las tablas e historiales.
 
+Para la **primera inicialización**:
 ```bash
 docker compose exec backend python reset_db.py
 ```
 
 ### Configuración del Administrador Vía Variables de Entorno (.env)
+El script `reset_db.py` crea el usuario inicial según las variables del archivo `.env` en la raíz del proyecto (por defecto: `admin/admin123`).
 
-El script `reset_db.py` crea un usuario dinámicamente si configuras las variables en un archivo `.env` en la raíz del proyecto. Si no lo haces, usará las por defecto (`admin/admin123`).
-
-Ejemplo de `.env`:
+Ejemplo de `.env` unificado:
 ```env
+# Backend Settings
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ADMIN_EMAIL=admin@empresa.com
 ADMIN_NOMBRE=Administrador Principal
+
+# Frontend Settings
+VITE_API_URL=/api
+VITE_APP_URL=http://localhost:5173
+
+# Caddy / SSL Settings (:80 para local sin SSL, o tu dominio para producción)
+CADDY_DOMAIN=:80
 ```
+
+## 🛡️ Persistencia de Datos, Transacciones ACID y Respaldos
+
+### Volúmenes Persistentes
+Toda la información reside en dos volúmenes nombrados gestionados por Docker:
+- `gemstone-data`: Contiene el archivo SQLite `/app/data/gemstone.db`.
+- `gemstone-uploads`: Contiene todas las imágenes comprimidas en WebP en `/app/uploads/`.
+
+Estos volúmenes sobreviven intactos a:
+- Reinicios del contenedor (`docker compose restart`).
+- Detención de contenedores (`docker compose down`).
+- Reconstrucción de imágenes de frontend o backend (`docker compose up --build`).
+
+*(Nota de seguridad: Nunca utilices `docker compose down -v`, ya que la bandera `-v` elimina los volúmenes).*
+
+### Transacciones ACID
+GemStoneX opera sobre SQLite bajo el estándar completo **ACID**:
+- **Atomicidad:** Gestionada en bloques transaccionales de SQLAlchemy (`SessionLocal`). Si la creación de un lote o una de sus piedras falla, toda la transacción hace rollback sin dejar registros huérfanos.
+- **Consistencia:** Las reglas matemáticas de conservación de pesos y validaciones de estados impiden escrituras inconsistentes.
+- **Aislamiento:** SQLite aísla las transacciones a nivel de archivo (equivalente a `SERIALIZABLE`), evitando lecturas sucias (*dirty reads*).
+- **Durabilidad:** Al llamar a `db.commit()`, SQLite ejecuta `fsync()` directo al disco persistente, asegurando que los datos resistan caídas imprevistas del sistema o cortes de energía.
+
+### Protocolo de Respaldo (Backup en Caliente)
+Antes de actualizar la aplicación o por mantenimiento periódico, puedes extraer un snapshot de la base de datos y de las fotos con un solo comando sin detener el servicio:
+```powershell
+# En Windows PowerShell
+docker compose cp gemstone-backend:/app/data/gemstone.db ./backups/gemstone_backup.db
+docker compose cp gemstone-backend:/app/uploads ./backups/uploads_backup
+```
+
+## 🧬 Evolución de Esquemas y Versionamiento en el Tiempo (Alembic)
+
+El sistema está diseñado para incorporar nuevos modelos de negocio (por ejemplo: recepción de lotes a granel por peso en quilates, desbaste de esferas, brillado y perforación) sin perder datos existentes.
+
+### Flujo de Modificación Segura:
+1. **Respaldar:** Tomar una copia de seguridad rápida de `gemstone.db`.
+2. **Actualizar Modelos:** Modificar o agregar campos en `backend/app/models.py` (usando `nullable=True` o valores por defecto para columnas nuevas, o creando nuevas tablas).
+3. **Generar Migración:**
+   ```bash
+   docker compose exec backend alembic revision --autogenerate -m "descripcion_del_cambio"
+   ```
+4. **Aplicar Migración en Caliente:**
+   ```bash
+   docker compose exec backend alembic upgrade head
+   ```
+   SQLite añadirá las columnas o tablas nuevas **sin borrar ni tocar las filas y datos históricos previamente registrados**.
 
 ## 🔗 Endpoints Principales (API)
 
-- **Auth**:
-  - `POST /auth/token` - Intercambia usuario y contraseña por un token JWT Bearer.
-- **Dashboard**:
-  - `GET /dashboard/stats` - Retorna los agregados estadísticos nativos (piedras por estado, tallador, y pesos totales).
-- **Lotes y Piedras**:
-  - `POST /lotes/` - Registra un lote nuevo, autogenerando piedras.
-  - `POST /piedras/{id}/estado` - Inyecta un nuevo registro de estado e imágenes en el historial. Valida reglas de peso límite.
-  - `GET /piedras/{id}/historial` - Devuelve el historial inmutable cronológico.
-- **Uploads**:
-  - `POST /upload/image` - Procesa con Pillow la fotografía a WebP y la almacena.
+- **Autenticación y Usuarios (`/auth`)**:
+  - `POST /auth/token` - Autenticación con credenciales. Para rol `Administrador`, implementa flujo 2FA: si es el primer inicio retorna `403 (2FA_SETUP_REQUIRED)` con cabecera `X-Provisioning-Uri` (código QR); una vez configurado exige el parámetro `two_factor_code`.
+  - `POST /auth/register` - Registro de nuevos usuarios y operadores con contraseña encriptada (restringido a `Administrador`).
+- **Dashboard y Analíticas (`/dashboard`)**:
+  - `GET /dashboard/stats` - Retorna los agregados estadísticos nativos (piedras por estado, tallador, y pesos totales) con filtros opcionales de fecha.
+- **Lotes (`/lotes`)**:
+  - `POST /lotes/` - Registra un lote nuevo, autogenerando secuencialmente sus piedras individuales y tokens QR.
+  - `GET /lotes/{id}` - Obtiene el detalle completo del lote y la lista de sus piedras generadas.
+  - `POST /lotes/{id}/anular` - Anula lógicamente un lote y sus piedras asociadas registrando el motivo de anulación (restringido a `Administrador`).
+- **Piedras y Trazabilidad (`/piedras`)**:
+  - `GET /piedras/{id}/historial` - Devuelve el historial cronológico inmutable de la piedra. Para usuarios con rol `Operador`, exige el parámetro de consulta `?token={qr_token}` generado con el código QR físico para evitar enumeración.
+  - `POST /piedras/{id}/estado` - Inyecta un nuevo registro de estado (Desbaste, Tallado, Entregado), medidas, tallador responsable, área de custodia (`ubicacion_id`) y fotografías. Valida reglas matemáticas de conservación de pesos y el `qr_token` para operadores.
+- **Áreas de Custodia y Ubicación (`/ubicaciones`)**:
+  - `GET /ubicaciones/` - Lista todas las áreas de custodia física o departamental ("Recepción", "Bóveda / Caja Fuerte", "Área de Desbaste", "Área de Talla", "Control de Calidad", "En manos del Cliente"). Autopuebla las áreas estándar del taller si la base de datos está vacía.
+  - `POST /ubicaciones/` - Registra una nueva área de custodia personalizada (restringido a `Administrador`).
+- **Procesos Dinámicos de Taller (`/procesos`)**:
+  - `GET /procesos/` - Lista los procesos y etapas disponibles de transformación en taller.
+  - `POST /procesos/` - Crea un nuevo proceso de taller (restringido a `Administrador`).
+  - `DELETE /procesos/{proceso_id}` - Elimina un proceso de taller (restringido a `Administrador`).
+- **Personas y Actores (`/personas`)**:
+  - `GET /personas/` - Lista general de actores registrados.
+  - `POST /personas/` - Crea un nuevo actor (Cliente, Tallador, etc.).
+  - `GET /personas/rol/{rol}` - Filtra actores por rol específico para poblar selectores dinámicos en la interfaz.
+- **Archivos y Evidencias (`/upload`)**:
+  - `POST /upload/image` - Procesa la fotografía con Pillow, la comprime y convierte a WebP y la almacena en el volumen persistente. Retorna la URL relativa.
 
 ## 🐳 Despliegue con Docker (Producción)
 
@@ -147,17 +213,26 @@ El proyecto está completamente contenerizado para un despliegue rápido y segur
 Asegúrate de tener Docker y Docker Compose instalados. Para desplegar de forma segura en un servidor con dominio:
 
 1. **Configurar el DNS**: Asegúrate de que el registro (A record) de tu dominio (ej. `app.midominio.com`) apunte a la IP pública de tu servidor.
-2. **Editar Caddyfile**: Abre el archivo `Caddyfile` en la raíz del proyecto y reemplaza `trace.gemstonex.com` por tu dominio real.
-3. **Actualizar el Entorno**: En tu archivo `frontend/.env`, configura la variable para que los códigos QR de la aplicación utilicen tu dominio seguro: 
-   `VITE_APP_URL=https://app.midominio.com`
+2. **Configurar el Entorno (.env)**: En tu archivo `.env` en la raíz del proyecto, define tu dominio para que Caddy obtenga el certificado SSL automáticamente y los códigos QR utilicen HTTPS:
+   ```env
+   CADDY_DOMAIN=app.midominio.com
+   VITE_APP_URL=https://app.midominio.com
+   ```
+   *(Para entorno local en desarrollo, mantén `CADDY_DOMAIN=:80` para deshabilitar SSL y servir solo HTTP).*
 4. **Desplegar**: En la raíz del proyecto, ejecuta:
 ```bash
-docker-compose up --build -d
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
 Caddy se encargará automáticamente de obtener un certificado SSL válido y tu frontend estará disponible por HTTPS. La base de datos y las imágenes subidas están protegidas por volúmenes persistentes.
 
 ## 🔒 Seguridad Avanzada
 
 - **Protección de Rutas en el Frontend**: Las rutas principales de la aplicación están protegidas mediante un componente `ProtectedRoute` que verifica la existencia de un token de sesión válido, redireccionando automáticamente a la pantalla de inicio de sesión (`/login`) en caso contrario.
+- **Tokens Criptográficos Únicos en Códigos QR (Anti-Enumeración / Anti-Falsificación)**:
+  - Cada piedra y lote posee un `qr_token` único generado criptográficamente mediante HMAC-SHA256 al momento de su creación.
+  - Los códigos QR impresos codifican la URL física con dicho token: `https://.../piedra/{id}?token={qr_token}`.
+  - Los usuarios con rol `Operador` son obligados por el backend a validar este token para consultar el historial o cambiar el estado de la piedra.
+  - Esto impide que cualquier usuario o dispositivo ajeno pueda adivinar o asumir IDs secuenciales (ej. saber que existe `GSX-001-0001` y generar un QR arbitrario para `GSX-003-0001`). Sin el token criptográfico original impreso en el taller, el acceso es denegado con `403 Forbidden`.
+  - El rol `Administrador` conserva acceso administrativo global sin restricciones de token desde su panel de control.
 - **Doble Factor (TOTP 2FA)**: Al iniciar sesión en el frontend, el backend exigirá un código de seguridad de 6 dígitos al rol `Administrador`. La primera vez se mostrará un **Código QR** para vincular aplicaciones como Google Authenticator o Authy.
 - **Roles y Privilegios (RBAC)**: Solo los usuarios con rol `Administrador` tienen permitido visualizar el Dashboard de métricas generales y registrar a otros miembros del equipo (`/register`). Las cuentas de los talladores (`Operador`) tienen un acceso enfocado únicamente en la trazabilidad.

@@ -40,7 +40,7 @@ docker compose run --rm backend alembic upgrade head
 ## 5. Restart the Application
 Once migrations have successfully completed, bring the application back online:
 ```bash
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ## 6. Verification

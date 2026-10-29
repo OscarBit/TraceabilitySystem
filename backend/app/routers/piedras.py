@@ -5,6 +5,7 @@ from app.database import get_db
 from app.models import Piedra, HistorialEstadoPiedra, EstadoPiedra
 from app.schemas.base import PiedraEstadoUpdate, HistorialEstadoResponse, PlanCorteUpdate
 from app.auth import get_current_user
+from app.utils.security import verify_qr_token
 
 router = APIRouter(prefix="/piedras", tags=["piedras"])
 
@@ -13,6 +14,14 @@ def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depend
     piedra = db.query(Piedra).filter(Piedra.id == id).first()
     if not piedra:
         raise HTTPException(status_code=404, detail="Piedra no encontrada")
+        
+    # Regla anti-falsificación / enumeración: Si el usuario es Operador, debe proveer el token QR válido
+    if current_user.rol.value == "Operador" and piedra.qr_token:
+        if not data.qr_token or not verify_qr_token(piedra.id, data.qr_token):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token QR no válido o ausente. Debe escanear el código QR físico original de la piedra."
+            )
         
     if piedra.estado_actual == EstadoPiedra.Entregado:
         # Business rule: If it's already "Entregado", we can only update notes
@@ -94,10 +103,18 @@ def update_piedra_estado(id: str, data: PiedraEstadoUpdate, db: Session = Depend
     return nuevo_historial
 
 @router.get("/{id}/historial", response_model=list[HistorialEstadoResponse])
-def get_piedra_historial(id: str, db: Session = Depends(get_db)):
+def get_piedra_historial(id: str, token: str = None, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     piedra = db.query(Piedra).filter(Piedra.id == id).first()
     if not piedra:
         raise HTTPException(status_code=404, detail="Piedra no encontrada")
+
+    # Si es operador y la piedra tiene token asignado, debe presentar el token correcto
+    if current_user.rol.value == "Operador" and piedra.qr_token:
+        if not token or not verify_qr_token(piedra.id, token):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token QR no válido o ausente. Debe escanear el código QR físico original de la piedra."
+            )
 
     historial = db.query(HistorialEstadoPiedra).filter(
         HistorialEstadoPiedra.piedra_id == id
