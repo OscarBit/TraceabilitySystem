@@ -159,6 +159,9 @@ GemStoneX opera sobre SQLite bajo el estándar completo **ACID**:
 
 ### 📦 Scripts de Respaldo y Restauración en Caliente
 
+> [!TIP]
+> Para la guía paso a paso completa, automatización con el Programador de Tareas de Windows/Cron y procedimientos de recuperación ante desastres, consulta [BACKUP_AND_RECOVERY_GUIDE.md](BACKUP_AND_RECOVERY_GUIDE.md).
+
 Se incluyen herramientas profesionales de respaldo y restauración tanto para Windows PowerShell como para Linux/VPS:
 
 #### 1. Generar Respaldo en Caliente (Hot Backup):

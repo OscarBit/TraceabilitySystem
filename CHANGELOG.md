@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
   - Confirmación obligatoria interactiva (`DESTRUIR_DATOS`) o flag explícito `--force` en CI/scripts.
   - Respaldo de emergencia previo (`.pre_reset_<timestamp>.bak`) antes de ejecutar `drop_all()`.
   - Sembrado completo de usuario Administrador y de las 6 áreas de custodia iniciales.
+- **Guía de Respaldos y Recuperación**: Creación de `BACKUP_AND_RECOVERY_GUIDE.md` con instrucciones detalladas, programación de tareas desatendidas (Windows Task Scheduler y Linux Cron) y pasos de recuperación ante desastres.
 - **Soporte de Docker Compose para Producción**: Inclusión de `docker-compose.prod.yml` y unificación de `.env.example` en la raíz.
 
 ### Changed
